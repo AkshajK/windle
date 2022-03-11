@@ -31,11 +31,11 @@ const auth = require("./auth");
 // socket stuff
 const socketManager = require("./server-socket");
 
+require("dotenv");
 // Server configuration below
 // TODO change connection URL after setting up your team database
-const mongoConnectionURL = "FILL ME IN";
-// TODO change database name to the name you chose
-const databaseName = "FILL ME IN";
+const mongoConnectionURL = process.env.ATLAS_SRV;
+const databaseName = process.env.DATABASE_NAME;
 
 // connect to mongodb
 mongoose
