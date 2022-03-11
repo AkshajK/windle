@@ -11,6 +11,9 @@ const express = require("express");
 
 // import models so we can interact with the database
 const User = require("./models/user");
+const Message = require("./models/message");
+const Tournament = require("./models/tournament");
+const Community = require("./models/community");
 
 // import authentication library
 const auth = require("./auth");
@@ -34,13 +37,30 @@ router.get("/whoami", (req, res) => {
 
 router.post("/initsocket", (req, res) => {
   // do nothing if user not logged in
-  if (req.user) socketManager.addUser(req.user, socketManager.getSocketFromSocketID(req.body.socketid));
+  if (req.user)
+    socketManager.addUser(req.user, socketManager.getSocketFromSocketID(req.body.socketid));
   res.send({});
 });
 
 // |------------------------------|
-// | write your API methods below!|
+// | The Backend of WINDLE        |
 // |------------------------------|
+
+router.post("/createCommunity", (req, res) => {});
+
+router.post("/joinCommunity", (req, res) => {});
+
+router.post("/joinLobby", (req, res) => {});
+
+router.post("/leaveLobby", (req, res) => {});
+
+const leaveLobby; 
+
+const startTournament;
+
+router.post("/guess", (req, res) => {});
+
+router.post("/message", (req, res) => {});
 
 // anything else falls to this "not found" case
 router.all("*", (req, res) => {
