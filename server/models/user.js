@@ -3,7 +3,14 @@ const mongoose = require("mongoose");
 const UserSchema = new mongoose.Schema({
   name: String,
   googleid: String,
-  ratings: [{ communityId: String, rating: Number }],
+  ratings: {
+    type: [{ communityId: String, rating: Number }],
+    default: [],
+  },
+  tournamentLobbysIn: {
+    type: [String],
+    default: [],
+  },
 });
 
 // compile model from schema

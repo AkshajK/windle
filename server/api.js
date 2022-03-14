@@ -46,13 +46,55 @@ router.post("/initsocket", (req, res) => {
 // | The Backend of WINDLE        |
 // |------------------------------|
 
-router.post("/createCommunity", (req, res) => {});
 
-router.post("/joinCommunity", (req, res) => {});
+router.post("/createCommunity", (req, res) => {
+  const community = new Community({name: req.body.name, leaderboard: []})
+  community.save().then((savedCommunity) => {
+    res.send(savedCommunity);
+  })
+});
 
-router.post("/joinLobby", (req, res) => {});
+router.post("/enterCommunity", (req, res) => {
+  const community = await Community.findOne({name: req.body.name});
+  if(!community) res.send({invalid: true});
+  const tournamentsMongoDB = await Tournament.find({communityId: community._id});
+  const tournaments = tournamentsMongoDB.map((tournament) => {
+    return {
+      name: tournament.name,
+      startTime: tournament.startTime,
+      correctGuesses: tournament.guesses.filter((entry)=>(entry.guess === tournament.word))
+    }
+  })
+  res.send({
+    tournaments,
+    leaderboard: community.leaderboard
+  })
+});
 
-router.post("/leaveLobby", (req, res) => {});
+router.post("/enterLobby", (req, res) => {
+  const community = await Community.findOne({name: req.body.community});
+  const tournament = await Tournament.findOne({communityId: community._id, name: req.body.tournamentName})
+  const tournamentId = tournament._id + "";
+  const chatMessages = await Message.find({tournamentId: tournamentId});
+  const user = await User.findById(req.user._id);
+  if(!user.tournamentLobbysIn.includes(req.user._id+"")) {
+    user.tournamentLobbysIn = user.tournamentLobbysIn.concat([req.user._id+""]);
+    await user.save();
+  }
+  const participantsMongoDB = await User.find({tournamentLobbysIn: tournament._id})
+  const participants = participantsMongoDB.map((participant) => {
+    const rating = participant.ratings.find((entry)=>entry.communityId===community._id+"")?.rating || 1200;
+  })
+  res.send({
+    chatMessages,
+    name: tournament.name,
+    startTime: tournament.startTime,
+    status: tournament.status,
+    guesses: tournament.guesses
+  })
+});
+
+router.post("/exitLobby", (req, res) => {});
 
 const leaveLobby; 
 
