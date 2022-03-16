@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
-import { Router } from "@reach/router";
+import { useState, useEffect } from "react";
+import { Switch, BrowserRouter as Router, Route } from "react-router-dom";
 import NotFound from "./pages/NotFound.js";
-import Skeleton from "./pages/Skeleton.js";
-
+import Community from "./pages/Community.js";
+import Game from "./pages/Game.js";
+import LoginButton from "./modules/LoginButton.js";
 import "../utilities.css";
 
 import { socket } from "../client-socket.js";
@@ -14,12 +15,13 @@ import { get, post } from "../utilities";
  */
 const App = () => {
   const [userId, setUserId] = useState(undefined);
-
+  const [userName, setUserName] = useState(undefined);
   useEffect(() => {
     get("/api/whoami").then((user) => {
       if (user._id) {
         // they are registed in the database, and currently logged in.
         setUserId(user._id);
+        setUserName(user.name);
       }
     });
   }, []);
@@ -41,8 +43,17 @@ const App = () => {
   return (
     <>
       <Router>
-        <Skeleton path="/" handleLogin={handleLogin} handleLogout={handleLogout} userId={userId} />
-        <NotFound default />
+        <Switch>
+          <Route path="/:communityName/:tournamentNameEncoded">
+            <Game userName={userName} />
+          </Route>
+          <Route path="/:communityName">
+            <Community userName={userName} />
+          </Route>
+          <Route path="/">
+            <LoginButton handleLogin={handleLogin} handleLogout={handleLogout} userId={userId} />
+          </Route>
+        </Switch>
       </Router>
     </>
   );

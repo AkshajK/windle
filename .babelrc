@@ -1,14 +1,10 @@
 {
-    "presets": [
-       ["@babel/preset-env", {
-          "targets": { "browsers": ["last 2 versions"] },
-          "corejs": "3",
-          "useBuiltIns": "usage"
-          }],
-        "@babel/react",
-        {
-          "plugins" : ["@babel/plugin-proposal-class-properties"]
-        }
-
+  "presets": [
+    [
+      "@babel/preset-react",
+      {
+        "runtime": "automatic"
+      }
     ]
+  ]
 }

@@ -7,9 +7,10 @@ const TournamentSchema = new mongoose.Schema({
   guesses: [
     {
       userId: String,
+      userName: String,
       guess: String,
       seconds: Number,
-      virtual: boolean,
+      virtual: Boolean,
     },
   ],
   timeToHaveLobbyOpen: Number, // in seconds
