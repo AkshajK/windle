@@ -20,12 +20,14 @@ function verify(token) {
 // gets user from DB, or makes a new account if it doesn't exist yet
 function getOrCreateUser(user) {
   // the "sub" field means "subject", which is a unique identifier for each user
+
   return User.findOne({ googleid: user.sub }).then((existingUser) => {
     if (existingUser) return existingUser;
 
     const newUser = new User({
       name: user.name,
       googleid: user.sub,
+      picture: user.picture,
     });
 
     return newUser.save();

@@ -31,6 +31,8 @@ const App = () => {
     const userToken = res.tokenObj.id_token;
     post("/api/login", { token: userToken }).then((user) => {
       setUserId(user._id);
+      setUserName(user.name);
+
       post("/api/initsocket", { socketid: socket.id });
     });
   };
@@ -40,6 +42,9 @@ const App = () => {
     post("/api/logout");
   };
 
+  if (!userId) {
+    return <LoginButton handleLogin={handleLogin} handleLogout={handleLogout} userId={userId} />;
+  }
   return (
     <>
       <Router>
@@ -49,9 +54,6 @@ const App = () => {
           </Route>
           <Route path="/:communityName">
             <Community userName={userName} />
-          </Route>
-          <Route path="/">
-            <LoginButton handleLogin={handleLogin} handleLogout={handleLogout} userId={userId} />
           </Route>
         </Switch>
       </Router>

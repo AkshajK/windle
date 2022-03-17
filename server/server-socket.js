@@ -4,10 +4,7 @@ const socketToUserMap = {}; // maps socket ID to user object
 const User = require("./models/user");
 const getSocketFromUserID = (userid) => userToSocketMap[userid];
 const getUserFromSocketID = (socketid) => socketToUserMap[socketid];
-const getSocketFromSocketID = (socketid) => {
-  console.log(io.sockets.sockets);
-  return io.sockets.sockets.get(socketid);
-};
+const getSocketFromSocketID = (socketid) => io.sockets.sockets.get(socketid);
 
 const addUser = (user, socket) => {
   const oldSocket = userToSocketMap[user._id];
@@ -19,33 +16,38 @@ const addUser = (user, socket) => {
   }
 
   userToSocketMap[user._id] = socket;
-  console.log(socket);
   socketToUserMap[socket.id] = user;
 };
 
-const removeUser = async (userobj, socket) => {
+const removeUser = (userobj, socket) => {
   if (userobj) {
+    const userId = userobj._id + "";
     delete userToSocketMap[userobj._id];
-    const user = await User.findById(userobj._id);
-    const leftId = user.tournamentLobbysIn[0];
-    user.tournamentLobbysIn = user.tournamentLobbysIn.shift();
-    user.markModified("tournamentLobbysIn");
-    await user.save();
-    getSocketFromUserID(userobj._id).leave("TournamentLobby " + leftId);
-    getSocketFromUserID(userobj._id).leave("TournamentLobby " + leftId + " start");
-    getSocketFromUserID(userobj._id).leave("TournamentLobby " + leftId + " finish");
+    User.findById(userobj._id).then((user) => {
+      const leftId = user.tournamentLobbysIn[0];
+      io.in("TournamentLobby " + leftId).emit("leftLobby", {
+        userId,
+      });
+
+      user.tournamentLobbysIn = user.tournamentLobbysIn.shift();
+      user.markModified("tournamentLobbysIn");
+      user.save();
+      socket.leave("TournamentLobby " + leftId);
+      socket.leave("TournamentLobby " + leftId + " start");
+      socket.leave("TournamentLobby " + leftId + " finish");
+    });
   }
   delete socketToUserMap[socket.id];
 };
 
 module.exports = {
   init: (http) => {
-    io = require("socket.io")(http);
-    console.log("init done");
+    io = require("socket.io")(http, { allowEIO3: true });
     io.on("connection", (socket) => {
       console.log(`socket has connected ${socket.id}`);
       socket.on("disconnect", (reason) => {
         const user = getUserFromSocketID(socket.id);
+        console.log(`${user?.name || socket.id} has disconnected`);
         removeUser(user, socket);
       });
     });

@@ -6,6 +6,7 @@ const MessageSchema = new mongoose.Schema({
   text: String,
   tournamentId: String,
   finished: Boolean,
+  picture: String,
   timestamp: {
     type: Date,
     default: Date.now,

@@ -27,20 +27,23 @@ fs.readFile("server/wordle_allowed_guesses.txt", "utf8", (err, data) => {
   console.log(`Imported ${allowedWords.size} words`);
 });
 
-const leaveLobby = async (userId, tournamentId = undefined) => {
+const leaveLobby = async (userId, tournamentId) => {
   const user = await User.findById(userId);
-  const leftId = tournamentId;
-  if (tournamentId && user.tournamentLobbysIn.includes(tournamentId)) {
+  const tournament = await Tournament.findById(tournamentId);
+  if (user.tournamentLobbysIn.includes(tournamentId)) {
     user.tournamentLobbysIn = user.tournamentLobbysIn.filter((id) => id !== tournamentId);
-  } else if (!tournamentId) {
-    leftId = user.tournamentLobbysIn[0];
-    user.tournamentLobbysIn = user.tournamentLobbysIn.shift();
-    user.markModified("tournamentLobbysIn");
   }
+  socketManager
+    .getIo()
+    .in("TournamentLobby " + tournamentId)
+    .emit("leftLobby", {
+      userId,
+    });
+  console.log({ userId });
   await user.save();
-  socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + leftId);
-  socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + leftId + " start");
-  socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + leftId + " finish");
+  socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + tournamentId);
+  socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + tournamentId + " start");
+  socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + tournamentId + " finish");
 };
 
 const getRandomInt = (max) => {
@@ -76,13 +79,15 @@ const createTournament = async (
 };
 
 const startTournament = async (tournamentId) => {
+  const participantsMongoDB = await User.find({ tournamentLobbysIn: tournamentId });
   const tournament = await Tournament.findById(tournamentId);
   tournament.status = "inProgress";
+  tournament.ratedParticipants = participantsMongoDB.map((participant) => participant._id + "");
   await tournament.save();
   socketManager
     .getIo()
     .in("TournamentLobby " + tournamentId)
-    .emit("start tournament", {});
+    .emit("start tournament", { tournamentId });
 };
 
 module.exports = {

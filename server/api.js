@@ -26,6 +26,13 @@ const socketManager = require("./server-socket");
 console.log(socketManager);
 const serverFunctions = require("./serverFunctions");
 
+User.find({}).then((users) => {
+  users.forEach((user) => {
+    user.tournamentLobbysIn = [];
+    user.save();
+  });
+});
+
 router.post("/login", auth.login);
 router.post("/logout", auth.logout);
 router.get("/whoami", (req, res) => {
@@ -40,12 +47,7 @@ router.get("/whoami", (req, res) => {
 router.post("/initsocket", (req, res) => {
   // do nothing if user not logged in
   if (req.user) {
-    console.log(socketManager.getIo().sockets.sockets);
-    socketManager.addUser(
-      req.user,
-      //
-      socketManager.getSocketFromSocketID(req.body.socketid)
-    );
+    socketManager.addUser(req.user, socketManager.getSocketFromSocketID(req.body.socketid));
   }
   res.send({});
 });
@@ -111,6 +113,7 @@ router.post("/enterLobby", async (req, res) => {
       rating,
       name: participant.name,
       userId: participant._id + "",
+      picture: participant.picture,
     };
   });
   const finished = tournament.guesses.find((entry) => entry.guess === tournament.word);
@@ -121,7 +124,12 @@ router.post("/enterLobby", async (req, res) => {
   socketManager
     .getIo()
     .in("TournamentLobby " + tournamentId)
-    .emit("joinedLobby", { userId: req.user._id + "", name: user.name, rating: user.rating });
+    .emit("joinedLobby", {
+      userId: req.user._id + "",
+      name: user.name,
+      rating: user.rating || 1200,
+      picture: user.picture,
+    });
   res.send({
     chatMessages,
     name: tournament.name,
@@ -129,11 +137,12 @@ router.post("/enterLobby", async (req, res) => {
     status: tournament.status,
     guesses: tournament.guesses,
     participants,
+    tournamentId,
   });
 });
 
 router.post("/exitLobby", (req, res) => {
-  serverFunctions.leaveLobby(req.body.tournamentId);
+  serverFunctions.leaveLobby(req.user._id + "", req.body.tournamentId);
 });
 
 router.post("/guess", async (req, res) => {
@@ -156,7 +165,14 @@ router.post("/guess", async (req, res) => {
     );
   const correct = req.body.guess === tournament.word;
   const newGuesses = tournament.guesses.concat([
-    { userId: req.user._id + "", userName: user.name, seconds: time, virtual: false, result },
+    {
+      userId: req.user._id + "",
+      userName: user.name,
+      picture: user.picture,
+      seconds: time,
+      virtual: false,
+      result,
+    },
   ]);
   tournament.guesses = newGuesses;
   await tournament.save();
@@ -167,6 +183,7 @@ router.post("/guess", async (req, res) => {
       tournamentId: tournament._id + "",
       userId: req.user._id + "",
       name: user.name,
+      picture: user.picture,
       guessNumber: newGuesses.filter((guess) => guess.userId === req.user._id + "").length,
       time,
       result,
@@ -194,6 +211,7 @@ router.post("/message", async (req, res) => {
     text: req.body.message,
     userId: req.user._id + "",
     name: user.name,
+    picture: user.picture,
     tournamentId: tournament._id + "",
     finished,
   };

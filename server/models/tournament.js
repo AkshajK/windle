@@ -8,6 +8,7 @@ const TournamentSchema = new mongoose.Schema({
     {
       userId: String,
       userName: String,
+      picture: String,
       guess: String,
       seconds: Number,
       virtual: Boolean,
@@ -16,6 +17,7 @@ const TournamentSchema = new mongoose.Schema({
   timeToHaveLobbyOpen: Number, // in seconds
   word: String,
   status: String, // 'scheduled'|'waiting'|'inProgress'|'complete'
+  ratedParticipants: [String],
 });
 
 // compile model from schema

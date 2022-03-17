@@ -17,7 +17,7 @@ import Button from "@mui/material/Button";
 const CurrentTournament = ({ tournament, communityName }) => {
   const history = useHistory();
   return (
-    <Card variant="outlined" raised>
+    <Card raised>
       <CardContent>
         <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
           {new Date(tournament.startTime).toString()}
