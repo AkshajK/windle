@@ -26,6 +26,9 @@ const socketManager = require("./server-socket");
 console.log(socketManager);
 const serverFunctions = require("./serverFunctions");
 
+// initialize wordlist
+serverFunctions.setup();
+
 User.find({}).then((users) => {
   users.forEach((user) => {
     user.tournamentLobbysIn = [];
@@ -55,7 +58,7 @@ router.post("/initsocket", (req, res) => {
 // |------------------------------|
 // | The Backend of WINDLE        |
 // |------------------------------|
-//serverFunctions.createTournament("Test Tournament", "MIT", new Date("March 17, 2022 00:00:00"));
+serverFunctions.createTournament("Yay nice UI", "MIT", new Date("March 19, 2022 03:17:00"));
 
 router.post("/createCommunity", (req, res) => {
   const community = new Community({ name: req.body.name, leaderboard: [] });
@@ -80,6 +83,7 @@ router.post("/enterCommunity", async (req, res) => {
         .map((entry) => ({
           userId: entry.userId,
           userName: entry.userName,
+          picture: entry.picture,
           seconds: entry.seconds,
           virtual: entry.virtual,
         })),
@@ -116,10 +120,14 @@ router.post("/enterLobby", async (req, res) => {
       picture: participant.picture,
     };
   });
-  const finished = tournament.guesses.find((entry) => entry.guess === tournament.word);
+  const finished = tournament.guesses.find(
+    (entry) => entry.userId === req.user._id + "" && entry.guess === tournament.word
+  );
+  let answer = "Lol good try";
+  if (finished) answer = tournament.word;
   socketManager
     .getSocketFromUserID(req.user._id)
-    .join("TournamentLobby " + tournamentId + finished ? " finish" : " start");
+    .join("TournamentLobby " + tournamentId + (finished ? " finish" : " start"));
   socketManager.getSocketFromUserID(req.user._id).join("TournamentLobby " + tournamentId);
   socketManager
     .getIo()
@@ -135,9 +143,15 @@ router.post("/enterLobby", async (req, res) => {
     name: tournament.name,
     startTime: tournament.startTime,
     status: tournament.status,
-    guesses: tournament.guesses,
+    guesses: tournament.guesses.map((guess) => {
+      if (guess.userId !== req.user._id + "" && !finished)
+        return Object.assign(guess, { guess: "nice try" });
+      return guess;
+    }),
     participants,
     tournamentId,
+    finished,
+    answer,
   });
 });
 
@@ -149,21 +163,24 @@ router.post("/guess", async (req, res) => {
   const user = await User.findById(req.user._id);
   const tournament = await Tournament.findById(req.body.tournamentId);
   if (tournament.status !== "inProgress") return;
-  if (!allowed_words.has(req.body.guess)) {
+  console.log(req.body.guess);
+  if (!serverFunctions.isAllowed(req.body.guess)) {
     res.send({ valid: false });
     return;
   }
-  const time = (Date.now().getTime() - new Date(tournament.startTime).getTime()) * 0.001;
+  const time = (new Date().getTime() - new Date(tournament.startTime).getTime()) * 0.001;
   const result = req.body.guess
     .split("")
     .map((character, i) =>
-      character === tournament.answer[0]
+      character === tournament.word[i]
         ? "green"
-        : tournament.answer.split("").includes(character)
+        : tournament.word.split("").includes(character)
         ? "yellow"
         : "white"
     );
   const correct = req.body.guess === tournament.word;
+  const guessNumber =
+    tournament.guesses.filter((guess) => guess.userId === req.user._id + "").length + 1;
   const newGuesses = tournament.guesses.concat([
     {
       userId: req.user._id + "",
@@ -171,33 +188,44 @@ router.post("/guess", async (req, res) => {
       picture: user.picture,
       seconds: time,
       virtual: false,
+
+      guessNumber,
+      guess: req.body.guess,
       result,
     },
   ]);
   tournament.guesses = newGuesses;
   await tournament.save();
-  socketManager
-    .getIo()
-    .in("TournamentLobby " + tournamentId)
-    .emit("guess", {
-      tournamentId: tournament._id + "",
-      userId: req.user._id + "",
-      name: user.name,
-      picture: user.picture,
-      guessNumber: newGuesses.filter((guess) => guess.userId === req.user._id + "").length,
-      time,
-      result,
-      correct,
-    });
-  res.send({ result, valid: true, correct });
+  const guess = {
+    tournamentId: tournament._id + "",
+    userId: req.user._id + "",
+    userName: user.name,
+    picture: user.picture,
+    virtual: false,
+    guessNumber,
+    seconds: time,
+    result,
+    // guess: req.body.guess,
+    correct,
+  };
   if (correct) {
     socketManager
       .getSocketFromUserID(req.user._id)
-      .leave("TournamentLobby " + tournamentId + " start");
+      .leave("TournamentLobby " + req.body.tournamentId + " start");
     socketManager
       .getSocketFromUserID(req.user._id)
-      .join("TournamentLobby " + tournamentId + " finish");
+      .join("TournamentLobby " + req.body.tournamentId + " finish");
   }
+  socketManager
+    .getSocketFromUserID(req.user._id)
+    .to("TournamentLobby " + req.body.tournamentId + " start")
+    .emit("guess", guess);
+  guess.guess = req.body.guess;
+  socketManager
+    .getSocketFromUserID(req.user._id)
+    .to("TournamentLobby " + req.body.tournamentId + " finish")
+    .emit("guess", guess);
+  res.send({ result, valid: true, correct, guesses: correct ? tournament.guesses : [] });
 });
 
 router.post("/message", async (req, res) => {
@@ -208,20 +236,20 @@ router.post("/message", async (req, res) => {
       (entry) => entry.userId === req.user._id + "" && entry.guess === tournament.word
     ).length > 0;
   const info = {
-    text: req.body.message,
+    text: req.body.text,
     userId: req.user._id + "",
     name: user.name,
     picture: user.picture,
     tournamentId: tournament._id + "",
     finished,
+    timestamp: new Date(),
   };
   const message = new Message(info);
   message.save();
-
-  socketManager
-    .getIo()
-    .in("TournamentLobby " + tournamentId + " " + finished ? "finish" : "start")
-    .emit("message", info);
+  const roomName = "TournamentLobby " + tournament._id + " " + (finished ? "finish" : "start");
+  console.log("sending out socket to " + roomName);
+  socketManager.getIo().in(roomName).emit("message", info);
+  res.send({});
 });
 
 // anything else falls to this "not found" case

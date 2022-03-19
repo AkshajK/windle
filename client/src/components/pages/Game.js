@@ -11,9 +11,13 @@ import ListItemText from "@mui/material/ListItemText";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import Avatar from "@mui/material/Avatar";
 import Wordle from "../modules/Wordle.js";
+import Guess from "../modules/Guess.js";
+import Grid from "@mui/material/Grid";
+import Box from "@mui/material/Box";
+import Chat from "../modules/Chat.js";
 import { get, post } from "../../utilities";
-
-const Game = ({ userName }) => {
+import { secToString, isCorrect } from "../../clientFunctions.js";
+const Game = ({ userName, userId }) => {
   const { communityName, tournamentNameEncoded } = useParams();
   const history = useHistory();
   const [chatMessages, setChatMessages] = useState([]);
@@ -23,7 +27,13 @@ const Game = ({ userName }) => {
   const [startTime, setStartTime] = useState(new Date());
   const [secondsLeft, setSecondsLeft] = useState(0);
   const [tournamentId, setTournamentId] = useState("");
+  const [finished, setFinished] = useState(false);
+  const [answer, setAnswer] = useState("");
+  const [myGuesses, setMyGuesses] = useState([]);
   const tournamentName = decodeURI(tournamentNameEncoded);
+  useEffect(() => {
+    setMyGuesses(guesses.filter((g) => g.userId === userId).slice(0, 6));
+  }, [guesses]);
   useEffect(() => {
     const joinedLobbyCallback = (data) => {
       console.log(data);
@@ -49,25 +59,51 @@ const Game = ({ userName }) => {
       if (data.tournamentId !== tournamentId) return;
       setStatus("inProgress");
     };
+    const guessCallback = (data) => {
+      setGuesses((guessesOld) => guessesOld.concat(data));
+      if (data.userId === userId && data.correct) {
+        setAnswer(data.answer);
+        setFinished(true);
+      }
+    };
+    const messageCallback = (data) => {
+      console.log(data);
+      setChatMessages((old) => old.concat(data));
+    };
     socket.on("joinedLobby", joinedLobbyCallback);
     socket.on("leftLobby", leftLobbyCallback);
     socket.on("start tournament", startTournamentCallback);
+    socket.on("guess", guessCallback);
+    socket.on("message", messageCallback);
     return () => {
       socket.off("joinedLobby", joinedLobbyCallback);
       socket.off("leftLobby", leftLobbyCallback);
       socket.off("start tournament", startTournamentCallback);
+      socket.off("guess", guessCallback);
+      socket.off("message", messageCallback);
     };
   }, []);
   useEffect(() => {
     let i = 0;
     post("/api/enterLobby", { community: communityName, tournamentName }).then(
-      ({ chatMessages, status, guesses, participants, startTime, tournamentId }) => {
+      ({
+        chatMessages,
+        status,
+        guesses,
+        participants,
+        startTime,
+        tournamentId,
+        finished,
+        answer,
+      }) => {
         setChatMessages(chatMessages);
         setStatus(status);
         setGuesses(guesses);
         setParticipants(participants);
         setStartTime(startTime);
         setTournamentId(tournamentId);
+        setFinished(finished);
+        setAnswer(answer);
         i = setInterval(() => {
           setSecondsLeft(
             Math.round(0.001 * (new Date(startTime).getTime() - new Date().getTime()))
@@ -81,56 +117,122 @@ const Game = ({ userName }) => {
   if (status === "waiting") {
     mainBlock = (
       <React.Fragment>
-        <Typography
-          variant="h4"
-          component="h4"
-        >{`${tournamentName} starts in ${secondsLeft} seconds`}</Typography>
-
-        <List
-          sx={{
-            width: "100%",
-            maxWidth: 360,
-            bgcolor: "background.paper",
-            overflow: "auto",
-            maxHeight: 600,
-          }}
-        >
-          {participants.map((user, i) => (
-            <ListItem key={i}>
-              <ListItemAvatar>
-                <Avatar alt={user.name} src={user.picture} />
-              </ListItemAvatar>
-              <ListItemText primary={user.name} secondary={user.rating} />
-            </ListItem>
-          ))}
-        </List>
+        <Box marginTop="24px" marginBottom="12px">
+          <Typography
+            variant="h5"
+            align="center"
+            sx={{ fontWeight: "bold" }}
+          >{`${tournamentName} starts in ${secondsLeft} seconds`}</Typography>
+        </Box>
+        <Grid container direction="row" height="calc(100vh - 150px)" width="100%">
+          <Box width="calc(50vw - 20px)" height="100%">
+            <Chat messages={chatMessages.filter((m) => !m.finished)} tournamentId={tournamentId} />
+          </Box>
+          <Box width="calc(50vw - 20px)" height="100%">
+            <List
+              sx={{
+                width: "100%",
+                maxWidth: 360,
+                bgcolor: "background.paper",
+                overflow: "auto",
+                height: "100%",
+              }}
+            >
+              {participants.map((user, i) => (
+                <Guess
+                  guess={{
+                    userName: user.name,
+                    userId: user.userId,
+                    picture: user.picture,
+                    result: ["white", "white", "white", "white", "white"],
+                    rating: user.rating,
+                  }}
+                  size="small"
+                  userId={userId}
+                />
+              ))}
+            </List>
+          </Box>
+        </Grid>
       </React.Fragment>
     );
   } else if (status === "inProgress") {
+    const finalGuess = myGuesses.length >= 1 && myGuesses[myGuesses.length - 1];
+    let rank = 0;
+    let rankText = "";
+    if (finished) {
+      rank =
+        guesses
+          .filter((g) => isCorrect(g.result))
+          .sort((a, b) => a.seconds - b.seconds)
+          .findIndex((g) => g.userId === userId) + 1;
+      rankText = rank % 10 === 1 ? `${rank}st` : rank % 10 === 2 ? `${rank}nd` : `${rank}th`;
+    }
     mainBlock = (
       <React.Fragment>
-        <Typography variant="h4" component="h4" color="#306AFF">{`${
-          -1 * secondsLeft
-        } seconds`}</Typography>
-        <Wordle tournamentId={tournamentId} />
+        <Box marginTop="24px" marginBottom="24px">
+          <Typography variant="h5" align="center" sx={{ fontWeight: "bold" }} color="#306AFF">
+            {finished
+              ? `${rankText} place! You took ${secToString(finalGuess?.seconds)}`
+              : `${-1 * secondsLeft} seconds`}
+          </Typography>
+        </Box>
+        <Grid
+          container
+          direction="row"
+          height={finished ? "calc(80vh - 150px)" : "calc(100vh - 150px)"}
+          width="100%"
+        >
+          <Box width="calc(50vw - 20px)" height="100%">
+            <Wordle
+              tournamentId={tournamentId}
+              guesses={myGuesses}
+              finished={finished}
+              setGuesses={setGuesses}
+            />
+          </Box>
+          <Box width="calc(50vw - 20px)" height="100%">
+            <List
+              sx={{
+                bgcolor: "background.paper",
+                overflow: "auto",
+                maxHeight: "100%",
+              }}
+            >
+              {guesses
+                .sort((a, b) => b.seconds - a.seconds)
+                .map((g) => (
+                  <Guess guess={g} finished={finished} userId={userId} />
+                ))}
+            </List>
+          </Box>
+        </Grid>
+        {finished && (
+          <Box height="20vh" width="100vw">
+            <Chat messages={chatMessages.filter((m) => m.finished)} tournamentId={tournamentId} />
+          </Box>
+        )}
       </React.Fragment>
     );
   }
   return (
-    <>
-      <h4>{`Welcome ${userName}`}</h4>
+    <Box width="100%" height="100%">
       {mainBlock}
-      <Button
-        size="small"
-        onClick={() => {
-          console.log("hi");
-          post("/api/exitLobby", { tournamentId });
-          history.push(`/${communityName}`);
-        }}
-      >
-        Return to Home
-      </Button>
-    </>
+      <Box marginTop="32px">
+        <Button
+          size="small"
+          fullWidth
+          sx={{ color: "#9453FF" }}
+          onClick={() => {
+            console.log("hi");
+            post("/api/exitLobby", { tournamentId });
+            history.push(`/${communityName}`);
+          }}
+        >
+          Return to Home
+        </Button>
+      </Box>
+    </Box>
   );
 };
 

@@ -10,23 +10,54 @@ const socketManager = require("./server-socket");
 const fs = require("fs");
 
 let wordList = [];
-let allowedWords = new Set();
+const allowedWords = new Set();
 let allowedWordsArr = [];
 
-fs.readFile("server/wordle_answers.txt", "utf8", (err, data) => {
-  if (err) throw err;
-  wordList = data.split("\n");
-  console.log(`Imported ${wordList.length} words`);
-});
-fs.readFile("server/wordle_allowed_guesses.txt", "utf8", (err, data) => {
-  if (err) throw err;
-  allowedWordsArr = data.split("\n").concat(wordList);
-  for (var i = 0; i < allowedWordsArr.length; i++) {
-    allowedWords.add(allowedWordsArr[i]);
-  }
-  console.log(`Imported ${allowedWords.size} words`);
-});
+const setup = async () => {
+  fs.readFile("server/wordle_answers.txt", "utf8", (err, data) => {
+    if (err) throw err;
+    wordList = data.split("\n");
+    console.log(`Imported ${wordList.length} words`);
+    fs.readFile("server/wordle_allowed_guesses.txt", "utf8", (err, data) => {
+      if (err) throw err;
+      allowedWordsArr = data.split("\n").concat(wordList);
+      for (var i = 0; i < allowedWordsArr.length; i++) {
+        allowedWords.add(allowedWordsArr[i]);
+        //console.log(`Added ${allowedWordsArr[i]}`);
+      }
+      console.log(`Imported ${allowedWords.size} words`);
+    });
+  });
 
+  const tournaments = await Tournament.find({});
+  tournaments.forEach((tournament) => {
+    if (tournament.status === "waiting" || tournament.status === "scheduled") {
+      const startTime = tournament.startTime;
+      const timeUntilStart = new Date(startTime).getTime() - new Date().getTime();
+      const timeUntilOpenLobby =
+        new Date(startTime).getTime() -
+        new Date().getTime() -
+        tournament.timeToHaveLobbyOpen * 1000;
+      if (tournament.status === "scheduled") {
+        setTimeout(async () => {
+          const newTournament = Tournament.findById(tournament._id);
+          newTournament.status = "waiting";
+          await newTournament.save();
+        }, Math.max(0, timeUntilOpenLobby));
+      }
+      setTimeout(() => {
+        startTournament(tournament._id);
+      }, timeUntilStart);
+      console.log(
+        `Scheduled tournament ${tournament.name} to start in ${timeUntilStart * 0.001} seconds`
+      );
+    }
+  });
+};
+
+const isAllowed = (word) => {
+  return allowedWords.has(word);
+};
 const leaveLobby = async (userId, tournamentId) => {
   const user = await User.findById(userId);
   const tournament = await Tournament.findById(tournamentId);
@@ -76,9 +107,11 @@ const createTournament = async (
   setTimeout(() => {
     startTournament(saved._id);
   }, timeUntilStart);
+  console.log(`Scheduled tournament ${name} to start in ${timeUntilStart * 0.001} seconds`);
 };
 
 const startTournament = async (tournamentId) => {
+  console.log("Start Tournament");
   const participantsMongoDB = await User.find({ tournamentLobbysIn: tournamentId });
   const tournament = await Tournament.findById(tournamentId);
   tournament.status = "inProgress";
@@ -95,4 +128,6 @@ module.exports = {
   startTournament,
   leaveLobby,
   getRandomInt,
+  isAllowed,
+  setup,
 };

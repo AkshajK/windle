@@ -1,10 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { get, post } from "../../utilities";
-import PastTournament from "../modules/PastTournament.js";
-import CurrentTournament from "../modules/CurrentTournament.js";
-
-const Community = ({ userName }) => {
+import Tournament from "../modules/Tournament.js";
+import Grid from "@mui/material/Grid";
+import Typography from "@mui/material/Typography";
+import Avatar from "@mui/material/Avatar";
+import Box from "@mui/material/Box";
+const Community = ({ userName, picture }) => {
   const { communityName } = useParams();
   const [tournaments, setTournaments] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -15,22 +17,53 @@ const Community = ({ userName }) => {
       setLeaderboard(leaderboard);
     });
   }, []);
-  const pastTournaments = tournaments.filter((t) => t.status === "complete");
-  const currentTournaments = tournaments.filter(
-    (t) => t.status === "waiting" || t.status === "inProgress"
+  const tournamentsShowing = tournaments.filter(
+    (t) => t.status === "waiting" || t.status === "inProgress" || t.status === "complete"
   );
 
   return (
-    <>
-      {communityName}
-      <h4>{`Welcome ${userName}`}</h4>
-      {pastTournaments.map((t) => (
-        <PastTournament tournament={t} />
-      ))}
-      {currentTournaments.map((t) => (
-        <CurrentTournament communityName={communityName} tournament={t} />
-      ))}
-    </>
+    <Grid container direction="column" height="100vh" width="100vw">
+      <Grid
+        container
+        direction="row"
+        width="250px"
+        padding="20px"
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Box>
+          <Typography
+            variant="h4"
+            component="span"
+            align="center"
+            sx={{ fontWeight: "bold", marginRight: "6px" }}
+          >
+            Windle
+          </Typography>
+          <Typography
+            variant="h4"
+            component="span"
+            align="center"
+            sx={{ fontWeight: "bold" }}
+            color="#306AFF"
+          >
+            {communityName}
+          </Typography>
+        </Box>
+        <Avatar
+          alt={userName}
+          src={picture}
+          sx={{ width: "70px", height: "70px", marginTop: "10px" }}
+        />
+      </Grid>
+      <Box width="calc(100% - 275px)" height="100%" overflow="auto">
+        {tournamentsShowing
+          .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+          .map((t) => (
+            <Tournament communityName={communityName} tournament={t} />
+          ))}
+      </Box>
+    </Grid>
   );
 };
 
