@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import Divider from "@mui/material/Divider";
@@ -34,6 +34,23 @@ const Game = ({ userName, userId }) => {
   useEffect(() => {
     setMyGuesses(guesses.filter((g) => g.userId === userId).slice(0, 6));
   }, [guesses]);
+  const startTournamentCallback = useCallback(
+    (data) => {
+      console.log("got here");
+      console.log(data.tournamentId);
+      console.log(tournamentId);
+      if (data.tournamentId + "" !== tournamentId + "") return;
+      console.log("got here 2");
+      setStatus("inProgress");
+    },
+    [tournamentId]
+  );
+  useEffect(() => {
+    socket.on("start tournament", startTournamentCallback);
+    return () => {
+      socket.off("start tournament", startTournamentCallback);
+    };
+  }, [tournamentId]);
   useEffect(() => {
     const joinedLobbyCallback = (data) => {
       console.log(data);
@@ -55,10 +72,7 @@ const Game = ({ userName, userId }) => {
       };
       setParticipants(removeOneInstance);
     };
-    const startTournamentCallback = (data) => {
-      if (data.tournamentId !== tournamentId) return;
-      setStatus("inProgress");
-    };
+
     const guessCallback = (data) => {
       setGuesses((guessesOld) => guessesOld.concat(data));
       if (data.userId === userId && data.correct) {
@@ -72,13 +86,11 @@ const Game = ({ userName, userId }) => {
     };
     socket.on("joinedLobby", joinedLobbyCallback);
     socket.on("leftLobby", leftLobbyCallback);
-    socket.on("start tournament", startTournamentCallback);
     socket.on("guess", guessCallback);
     socket.on("message", messageCallback);
     return () => {
       socket.off("joinedLobby", joinedLobbyCallback);
       socket.off("leftLobby", leftLobbyCallback);
-      socket.off("start tournament", startTournamentCallback);
       socket.off("guess", guessCallback);
       socket.off("message", messageCallback);
     };

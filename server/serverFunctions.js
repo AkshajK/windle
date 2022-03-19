@@ -120,7 +120,7 @@ const startTournament = async (tournamentId) => {
   socketManager
     .getIo()
     .in("TournamentLobby " + tournamentId)
-    .emit("start tournament", { tournamentId });
+    .emit("start tournament", { tournamentId: tournamentId + "" });
 };
 
 module.exports = {

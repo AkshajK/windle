@@ -58,7 +58,11 @@ router.post("/initsocket", (req, res) => {
 // |------------------------------|
 // | The Backend of WINDLE        |
 // |------------------------------|
-//serverFunctions.createTournament(`Tournament 0`, "MIT", new Date(`March 19, 2022 03:30:00`));
+/*serverFunctions.createTournament(
+  `Tournament Last Testing`,
+  "MIT",
+  new Date(`March 19, 2022 03:54:00`)
+);*/
 
 router.post("/createCommunity", (req, res) => {
   const community = new Community({ name: req.body.name, leaderboard: [] });
@@ -208,6 +212,18 @@ router.post("/guess", async (req, res) => {
     // guess: req.body.guess,
     correct,
   };
+
+  socketManager
+    .getSocketFromUserID(req.user._id)
+    .to("TournamentLobby " + req.body.tournamentId + " start")
+    .emit("guess", guess);
+  guess.guess = req.body.guess;
+  socketManager.getSocketFromUserID(req.user._id).emit("guess", guess);
+  socketManager
+    .getIo()
+    .in("TournamentLobby " + req.body.tournamentId + " finish")
+    .emit("guess", guess);
+  res.send({ result, valid: true, correct, guesses: correct ? tournament.guesses : [] });
   if (correct) {
     socketManager
       .getSocketFromUserID(req.user._id)
@@ -216,16 +232,6 @@ router.post("/guess", async (req, res) => {
       .getSocketFromUserID(req.user._id)
       .join("TournamentLobby " + req.body.tournamentId + " finish");
   }
-  socketManager
-    .getSocketFromUserID(req.user._id)
-    .to("TournamentLobby " + req.body.tournamentId + " start")
-    .emit("guess", guess);
-  guess.guess = req.body.guess;
-  socketManager
-    .getSocketFromUserID(req.user._id)
-    .to("TournamentLobby " + req.body.tournamentId + " finish")
-    .emit("guess", guess);
-  res.send({ result, valid: true, correct, guesses: correct ? tournament.guesses : [] });
 });
 
 router.post("/message", async (req, res) => {
