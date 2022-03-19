@@ -41,7 +41,7 @@ const setup = async () => {
       if (tournament.status === "scheduled") {
         const id = tournament._id + "";
         setTimeout(async () => {
-          const newTournament = Tournament.findById(id);
+          const newTournament = await Tournament.findById(id);
           newTournament.status = "waiting";
           await newTournament.save();
         }, Math.max(0, timeUntilOpenLobby));
