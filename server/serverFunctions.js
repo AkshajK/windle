@@ -39,8 +39,9 @@ const setup = async () => {
         new Date().getTime() -
         tournament.timeToHaveLobbyOpen * 1000;
       if (tournament.status === "scheduled") {
+        const id = tournament._id + "";
         setTimeout(async () => {
-          const newTournament = Tournament.findById(tournament._id);
+          const newTournament = Tournament.findById(id);
           newTournament.status = "waiting";
           await newTournament.save();
         }, Math.max(0, timeUntilOpenLobby));

@@ -63,6 +63,15 @@ router.post("/initsocket", (req, res) => {
   "MIT",
   new Date(`March 19, 2022 03:54:00`)
 );*/
+/*
+for (var i = 0; i < 12 * 24 * 2; i++) {
+  serverFunctions.createTournament(
+    `Quick Tournament ${i + 1}`,
+    "MIT",
+    new Date(new Date(`March 19, 2022 04:20:00`).getTime() + 1000 * 60 * 5 * i),
+    60 * 5
+  );
+}*/
 
 router.post("/createCommunity", (req, res) => {
   const community = new Community({ name: req.body.name, leaderboard: [] });
