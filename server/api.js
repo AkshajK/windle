@@ -58,15 +58,7 @@ router.post("/initsocket", (req, res) => {
 // |------------------------------|
 // | The Backend of WINDLE        |
 // |------------------------------|
-/*
-for (var i = 19; i < 32; i++) {
-    serverFunctions.createTournament(
-      `Tournament ${i - 18}`,
-      "MIT",
-      new Date(`March ${i}, 2022 00:00:00`)
-    );
-  }
-})*/
+//serverFunctions.createTournament(`Tournament 0`, "MIT", new Date(`March 19, 2022 03:30:00`));
 
 router.post("/createCommunity", (req, res) => {
   const community = new Community({ name: req.body.name, leaderboard: [] });
