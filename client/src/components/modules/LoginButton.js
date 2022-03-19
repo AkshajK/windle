@@ -2,7 +2,7 @@ import React, { Component } from "react";
 import GoogleLogin, { GoogleLogout } from "react-google-login";
 
 //TODO: REPLACE WITH YOUR OWN CLIENT_ID
-const GOOGLE_CLIENT_ID = "434008819449-lafh2q5jvbumeuk6uh5kutfbvhdojs46.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = "434008819449-cb80jm64j1c0b6rimhrtlaiprn8d70n8.apps.googleusercontent.com";
 
 const LoginButton = ({ userId, handleLogin, handleLogout }) => {
   return (
