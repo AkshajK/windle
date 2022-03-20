@@ -49,7 +49,7 @@ const Wordle = ({ tournamentId, guesses, finished, setGuesses }) => {
             return oldLetters.map((row) => row.slice());
           });
         }
-        if (data.correct) {
+        if (data.answer) {
           setGuesses(data.guesses);
         }
       });

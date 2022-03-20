@@ -76,8 +76,9 @@ const Game = ({ userName, userId }) => {
     };
 
     const guessCallback = (data) => {
+      console.log(data);
       setGuesses((guessesOld) => guessesOld.concat(data));
-      if (data.userId === userId && data.correct) {
+      if (data.userId === userId && (data.correct || data.guessNumber >= 6)) {
         setAnswer(data.answer);
         setFinished(true);
       }
@@ -181,9 +182,10 @@ const Game = ({ userName, userId }) => {
     );
   } else if (status === "inProgress") {
     const finalGuess = myGuesses.length >= 1 && myGuesses[myGuesses.length - 1];
+    const correct = finalGuess ? isCorrect(finalGuess.result) : false;
     let rank = 0;
     let rankText = "";
-    if (finished) {
+    if (finished && correct) {
       rank =
         guesses
           .filter((g) => isCorrect(g.result))
@@ -197,9 +199,11 @@ const Game = ({ userName, userId }) => {
         <Box marginTop="24px" marginBottom="24px">
           <Typography variant="h5" align="center" sx={{ fontWeight: "bold" }} color="#306AFF">
             {finished
-              ? `${rankText} place! You took ${secToString(
-                  isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds
-                )}`
+              ? correct
+                ? `${rankText} place! You took ${secToString(
+                    isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds
+                  )}`
+                : `The word is ${answer.toUpperCase()}`
               : `${-1 * secondsLeft} seconds`}
           </Typography>
         </Box>

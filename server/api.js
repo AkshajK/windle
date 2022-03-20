@@ -136,7 +136,9 @@ router.post("/enterLobby", async (req, res) => {
     };
   });
   const finished = tournament.guesses.find(
-    (entry) => entry.userId === req.user._id + "" && entry.guess === tournament.word
+    (entry) =>
+      entry.userId === req.user._id + "" &&
+      (entry.guess === tournament.word || entry.guessNumber >= 6)
   );
   let answer = "Lol good try";
   if (finished) answer = tournament.word;
@@ -210,9 +212,10 @@ router.post("/guess", async (req, res) => {
         ? "yellow"
         : "white"
     );
-  const correct = req.body.guess === tournament.word;
+
   const guessNumber =
     tournament.guesses.filter((guess) => guess.userId === req.user._id + "").length + 1;
+  const correct = req.body.guess === tournament.word;
   const virtualEntry = tournament.virtualStartTimes.find((e) => e.userId === req.user._id + "");
   const virtualSeconds = virtualEntry
     ? time +
@@ -233,7 +236,7 @@ router.post("/guess", async (req, res) => {
     },
   ]);
   tournament.guesses = newGuesses;
-  await tournament.save();
+  tournament.save();
   const guess = {
     tournamentId: tournament._id + "",
     userId: req.user._id + "",
@@ -253,13 +256,20 @@ router.post("/guess", async (req, res) => {
     .to("TournamentLobby " + req.body.tournamentId + " start")
     .emit("guess", guess);
   guess.guess = req.body.guess;
+  guess.answer = (correct || guessNumber >= 6) && tournament.word;
   socketManager.getSocketFromUserID(req.user._id).emit("guess", guess);
   socketManager
     .getIo()
     .in("TournamentLobby " + req.body.tournamentId + " finish")
     .emit("guess", guess);
-  res.send({ result, valid: true, correct, guesses: correct ? tournament.guesses : [] });
-  if (correct) {
+  res.send({
+    result,
+    valid: true,
+    correct,
+    guesses: correct || guessNumber >= 6 ? tournament.guesses : [],
+    answer: (correct || guessNumber >= 6) && tournament.word,
+  });
+  if (correct || guessNumber >= 6) {
     socketManager
       .getSocketFromUserID(req.user._id)
       .leave("TournamentLobby " + req.body.tournamentId + " start");
@@ -274,7 +284,9 @@ router.post("/message", async (req, res) => {
   const tournament = await Tournament.findById(req.body.tournamentId);
   const finished =
     tournament.guesses.filter(
-      (entry) => entry.userId === req.user._id + "" && entry.guess === tournament.word
+      (entry) =>
+        entry.userId === req.user._id + "" &&
+        (entry.guess === tournament.word || entry.guessNumber >= 6)
     ).length > 0;
   const info = {
     text: req.body.text,
