@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
-
+import Badge from "@mui/material/Badge";
 import { get, post } from "../../utilities";
 
 import Card from "@mui/material/Card";
@@ -17,16 +17,25 @@ import Grid from "@mui/material/Grid";
 import Box from "@mui/material/Box";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import { secToString, isCorrect } from "../../clientFunctions.js";
-
+const colors = ["success", "success", "success", "warning", "error", "error"];
 const Tournament = ({ tournament, communityName }) => {
   const listItems = tournament.correctGuesses.map((guess, i) => {
     console.log(guess);
     return (
       <ListItem key={i}>
         <ListItemAvatar>
-          <Avatar alt={guess.userName} src={guess.picture} />
+          <Badge
+            badgeContent={guess.guessNumber && guess.guessNumber + "/6"}
+            color={guess.guessNumber && colors[guess.guessNumber - 1]}
+          >
+            <Avatar alt={guess.userName} src={guess.picture} />
+          </Badge>
         </ListItemAvatar>
-        <ListItemText primary={guess.userName} secondary={secToString(guess.seconds, true)} />
+        <ListItemText
+          sx={{ marginLeft: "8px" }}
+          primary={guess.userName}
+          secondary={secToString(guess.virtual ? guess.virtualSeconds : guess.seconds, true)}
+        />
       </ListItem>
     );
   });
@@ -40,7 +49,7 @@ const Tournament = ({ tournament, communityName }) => {
       sx={{
         margin: "15px 24px 15px 0px",
         backgroundColor: tournament.status === "waiting" && "#B8FFCC",
-        opacity: tournament.status !== "waiting" && "70%",
+        //opacity: tournament.status !== "waiting" && "70%",
       }}
     >
       <CardContent>

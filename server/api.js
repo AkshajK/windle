@@ -99,6 +99,8 @@ router.post("/enterCommunity", async (req, res) => {
           picture: entry.picture,
           seconds: entry.seconds,
           virtual: entry.virtual,
+          guessNumber: entry.guessNumber,
+          virtualSeconds: entry.virtualSeconds,
         })),
       status: tournament.status,
     };
@@ -120,7 +122,7 @@ router.post("/enterLobby", async (req, res) => {
   const user = await User.findById(req.user._id);
   if (!user.tournamentLobbysIn.includes(tournamentId)) {
     user.tournamentLobbysIn = user.tournamentLobbysIn.concat([tournamentId]);
-    await user.save();
+    user.save();
   }
   const participantsMongoDB = await User.find({ tournamentLobbysIn: tournament._id });
   const participants = participantsMongoDB.map((participant) => {
@@ -151,6 +153,21 @@ router.post("/enterLobby", async (req, res) => {
       rating: user.rating || 1200,
       picture: user.picture,
     });
+  const isVirtual =
+    (tournament.status === "inProgress" || tournament.status === "complete") &&
+    !tournament.ratedParticipants.includes(req.user._id + "");
+  let virtualStartTime = tournament.startTime;
+  if (isVirtual) {
+    let ourEntry = tournament.virtualStartTimes.find((e) => e.userId === req.user._id + "");
+    if (!ourEntry) {
+      const tournament2 = await Tournament.findById(tournament._id);
+      ourEntry = { userId: req.user._id + "", startTime: new Date() };
+      tournament2.virtualStartTimes = tournament2.virtualStartTimes.concat([ourEntry]);
+      tournament2.save();
+    }
+    virtualStartTime = ourEntry.startTime;
+  }
+
   res.send({
     chatMessages,
     name: tournament.name,
@@ -165,6 +182,8 @@ router.post("/enterLobby", async (req, res) => {
     tournamentId,
     finished,
     answer,
+    isVirtual,
+    virtualStartTime,
   });
 });
 
@@ -194,14 +213,20 @@ router.post("/guess", async (req, res) => {
   const correct = req.body.guess === tournament.word;
   const guessNumber =
     tournament.guesses.filter((guess) => guess.userId === req.user._id + "").length + 1;
+  const virtualEntry = tournament.virtualStartTimes.find((e) => e.userId === req.user._id + "");
+  const virtualSeconds = virtualEntry
+    ? time +
+      new Date(tournament.startTime).getTime() * 0.001 -
+      new Date(virtualEntry.startTime).getTime() * 0.001
+    : undefined;
   const newGuesses = tournament.guesses.concat([
     {
       userId: req.user._id + "",
       userName: user.name,
       picture: user.picture,
       seconds: time,
-      virtual: false,
-
+      virtual: virtualEntry ? true : false,
+      virtualSeconds,
       guessNumber,
       guess: req.body.guess,
       result,
@@ -214,7 +239,8 @@ router.post("/guess", async (req, res) => {
     userId: req.user._id + "",
     userName: user.name,
     picture: user.picture,
-    virtual: false,
+    virtual: virtualEntry ? true : false,
+    virtualSeconds,
     guessNumber,
     seconds: time,
     result,

@@ -27,7 +27,11 @@ const Guess = ({ guess, finished, size, userId }) => {
       <ListItemText
         primaryTypographyProps={{ color: "#9453FF", fontWeight: "bold" }}
         primary={guess.userName.split(" ")[0]}
-        secondary={guess.seconds ? secToString(guess.seconds, true) : guess.rating}
+        secondary={
+          guess.seconds
+            ? secToString(guess.virtual ? guess.virtualSeconds : guess.seconds, true)
+            : guess.rating
+        }
       />
       <Grid
         container

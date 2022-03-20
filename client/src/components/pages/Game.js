@@ -30,6 +30,8 @@ const Game = ({ userName, userId }) => {
   const [finished, setFinished] = useState(false);
   const [answer, setAnswer] = useState("");
   const [myGuesses, setMyGuesses] = useState([]);
+  const [isVirtual, setIsVirtual] = useState(false);
+  const [virtualStartTime, setVirtualStartTime] = useState(new Date());
   const tournamentName = decodeURI(tournamentNameEncoded);
   useEffect(() => {
     setMyGuesses(guesses.filter((g) => g.userId === userId).slice(0, 6));
@@ -107,7 +109,10 @@ const Game = ({ userName, userId }) => {
         tournamentId,
         finished,
         answer,
+        isVirtual,
+        virtualStartTime,
       }) => {
+        console.log("isvurtual: " + isVirtual + " virtualstarttime " + virtualStartTime);
         setChatMessages(chatMessages);
         setStatus(status);
         setGuesses(guesses);
@@ -116,9 +121,15 @@ const Game = ({ userName, userId }) => {
         setTournamentId(tournamentId);
         setFinished(finished);
         setAnswer(answer);
+        setIsVirtual(isVirtual);
+        setVirtualStartTime(virtualStartTime);
         i = setInterval(() => {
           setSecondsLeft(
-            Math.round(0.001 * (new Date(startTime).getTime() - new Date().getTime()))
+            Math.round(
+              0.001 *
+                (new Date(isVirtual ? virtualStartTime : startTime).getTime() -
+                  new Date().getTime())
+            )
           );
         }, 1000);
       }
@@ -180,12 +191,15 @@ const Game = ({ userName, userId }) => {
           .findIndex((g) => g.userId === userId) + 1;
       rankText = rank % 10 === 1 ? `${rank}st` : rank % 10 === 2 ? `${rank}nd` : `${rank}th`;
     }
+    console.log(isVirtual + " " + finalGuess?.seconds);
     mainBlock = (
       <React.Fragment>
         <Box marginTop="24px" marginBottom="24px">
           <Typography variant="h5" align="center" sx={{ fontWeight: "bold" }} color="#306AFF">
             {finished
-              ? `${rankText} place! You took ${secToString(finalGuess?.seconds)}`
+              ? `${rankText} place! You took ${secToString(
+                  isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds
+                )}`
               : `${-1 * secondsLeft} seconds`}
           </Typography>
         </Box>

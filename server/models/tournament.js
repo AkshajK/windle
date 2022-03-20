@@ -12,10 +12,15 @@ const TournamentSchema = new mongoose.Schema({
       guess: String,
       guessNumber: Number,
       seconds: Number,
+      virtualSeconds: Number,
       virtual: Boolean,
       result: [String],
     },
   ],
+  virtualStartTimes: {
+    type: [{ userId: String, startTime: Date }],
+    default: [],
+  },
   timeToHaveLobbyOpen: Number, // in seconds
   word: String,
   status: String, // 'scheduled'|'waiting'|'inProgress'|'complete'
