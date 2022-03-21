@@ -49,6 +49,7 @@ const Game = ({ userName, userId }) => {
       socket.off("start tournament", startTournamentCallback);
     };
   }, [tournamentId]);
+  console.log(participants);
   useEffect(() => {
     const joinedLobbyCallback = (data) => {
       setParticipants((participantsOld) => participantsOld.concat(data));
@@ -138,7 +139,11 @@ const Game = ({ userName, userId }) => {
         </Box>
         <Grid container direction="row" height="calc(100vh - 150px)" width="100%">
           <Box width="calc(50vw - 20px)" height="100%">
-            <Chat messages={chatMessages.filter((m) => !m.finished)} tournamentId={tournamentId} />
+            <Chat
+              messages={chatMessages.filter((m) => !m.finished)}
+              tournamentId={tournamentId}
+              onlineUsers={participants.map((p) => p.userId)}
+            />
           </Box>
           <Box width="calc(50vw - 20px)" height="100%">
             <List
@@ -152,6 +157,7 @@ const Game = ({ userName, userId }) => {
             >
               {participants.map((user, i) => (
                 <Guess
+                  online={true}
                   guess={{
                     userName: user.name,
                     userId: user.userId,
@@ -219,19 +225,36 @@ const Game = ({ userName, userId }) => {
               }}
             >
               {guesses
-                .sort((a, b) => b.seconds - a.seconds)
+                .sort(
+                  (a, b) =>
+                    (b.virtual ? b.virtualSeconds : b.seconds) -
+                    (a.virtual ? a.virtualSeconds : a.seconds)
+                )
                 .filter(
                   (a) => finished || (a.virtual ? a.virtualSeconds : a.seconds) <= -1 * secondsLeft
                 )
+                .map((g) => {
+                  console.log(g);
+                  return g;
+                })
                 .map((g) => (
-                  <Guess guess={g} finished={finished} userId={userId} />
+                  <Guess
+                    guess={g}
+                    finished={finished}
+                    userId={g.userId}
+                    online={participants.map((p) => p.userId).includes(g.userId + "")}
+                  />
                 ))}
             </List>
           </Box>
         </Grid>
         {finished && (
           <Box height="20vh" width="100vw">
-            <Chat messages={chatMessages.filter((m) => m.finished)} tournamentId={tournamentId} />
+            <Chat
+              messages={chatMessages.filter((m) => m.finished)}
+              tournamentId={tournamentId}
+              onlineUsers={participants.map((p) => p.userId)}
+            />
           </Box>
         )}
       </React.Fragment>

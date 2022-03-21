@@ -12,17 +12,25 @@ import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import Avatar from "@mui/material/Avatar";
+import Badge from "@mui/material/Badge";
 import Divider from "@mui/material/Divider";
 import ListItemText from "@mui/material/ListItemText";
-import { secToString, isCorrect } from "../../clientFunctions.js";
+import { secToString, isCorrect, StyledBadge } from "../../clientFunctions.js";
 
-const Guess = ({ guess, finished, size, userId }) => {
+const Guess = ({ guess, finished, size, userId, online }) => {
   const small = size === "small";
   const correct = isCorrect(guess.result);
   return (
     <ListItem selected={correct}>
       <ListItemAvatar>
-        <Avatar alt={guess.userName} src={guess.picture} />
+        <StyledBadge
+          overlap="circular"
+          anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+          variant="dot"
+          invisible={!online}
+        >
+          <Avatar alt={guess.userName} src={guess.picture} />
+        </StyledBadge>
       </ListItemAvatar>
       <ListItemText
         primaryTypographyProps={{ color: "#9453FF", fontWeight: "bold" }}

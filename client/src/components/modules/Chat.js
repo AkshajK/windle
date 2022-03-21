@@ -10,8 +10,10 @@ import ListItemText from "@mui/material/ListItemText";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import Avatar from "@mui/material/Avatar";
 import { get, post } from "../../utilities.js";
+import Badge from "@mui/material/Badge";
+import { secToString, isCorrect, StyledBadge } from "../../clientFunctions.js";
 
-export default function Chat({ messages, tournamentId }) {
+export default function Chat({ messages, tournamentId, onlineUsers }) {
   let crop = (str) => {
     if (str.length > 140) {
       str = str.substring(0, 140);
@@ -75,7 +77,14 @@ export default function Chat({ messages, tournamentId }) {
             return (
               <ListItem dense fullWidth key={message._id}>
                 <ListItemAvatar>
-                  <Avatar alt={message.name} src={message.picture} />
+                  <StyledBadge
+                    overlap="circular"
+                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                    variant="dot"
+                    invisible={!onlineUsers.includes(message.userId + "")}
+                  >
+                    <Avatar alt={message.name} src={message.picture} />
+                  </StyledBadge>
                 </ListItemAvatar>
                 <Tooltip title={formatDate(message.timestamp)}>
                   <ListItemText>{text}</ListItemText>
