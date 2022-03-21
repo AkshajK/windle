@@ -123,8 +123,8 @@ router.post("/enterLobby", async (req, res) => {
     user.tournamentLobbysIn = user.tournamentLobbysIn.concat([tournamentId]);
     user.save();
   }
-  const participantsMongoDB = await User.find({ tournamentLobbysIn: tournament._id });
-  if (!participants.find((p) => p._id + "" === user._id + ""))
+  let participantsMongoDB = await User.find({ tournamentLobbysIn: tournament._id });
+  if (!participantsMongoDB.find((p) => p._id + "" === user._id + ""))
     participantsMongoDB = participantsMongoDB.concat([user]);
   const participants = participantsMongoDB.map((participant) => {
     const rating =
