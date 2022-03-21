@@ -47,7 +47,8 @@ module.exports = {
       console.log(`socket has connected ${socket.id}`);
       socket.on("disconnect", (reason) => {
         const user = getUserFromSocketID(socket.id);
-        console.log(`${user?.name || socket.id} has disconnected`);
+        console.log(`${user?.name || socket.id} has disconnected for reason ${reason}`);
+
         removeUser(user, socket, reason === "server namespace disconnect");
       });
     });
