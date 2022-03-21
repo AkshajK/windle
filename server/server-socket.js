@@ -49,7 +49,11 @@ module.exports = {
         const user = getUserFromSocketID(socket.id);
         console.log(`${user?.name || socket.id} has disconnected for reason ${reason}`);
 
-        removeUser(user, socket, reason === "server namespace disconnect");
+        removeUser(
+          user,
+          socket,
+          reason === "transport close" || reason === "server namespace disconnect"
+        );
       });
     });
   },

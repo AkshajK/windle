@@ -220,7 +220,9 @@ const Game = ({ userName, userId }) => {
             >
               {guesses
                 .sort((a, b) => b.seconds - a.seconds)
-                .filter((a) => finished || a.seconds >= -1 * secondsLeft)
+                .filter(
+                  (a) => finished || (a.virtual ? a.virtualSeconds : a.seconds) <= -1 * secondsLeft
+                )
                 .map((g) => (
                   <Guess guess={g} finished={finished} userId={userId} />
                 ))}
