@@ -38,11 +38,7 @@ const Game = ({ userName, userId }) => {
   }, [guesses]);
   const startTournamentCallback = useCallback(
     (data) => {
-      console.log("got here");
-      console.log(data.tournamentId);
-      console.log(tournamentId);
       if (data.tournamentId + "" !== tournamentId + "") return;
-      console.log("got here 2");
       setStatus("inProgress");
     },
     [tournamentId]
@@ -55,7 +51,6 @@ const Game = ({ userName, userId }) => {
   }, [tournamentId]);
   useEffect(() => {
     const joinedLobbyCallback = (data) => {
-      console.log(data);
       setParticipants((participantsOld) => participantsOld.concat(data));
     };
     const leftLobbyCallback = (data) => {
@@ -65,8 +60,6 @@ const Game = ({ userName, userId }) => {
         for (var i = 0; i < participantsOld.length; i++) {
           if (participantsNew[i].userId + "" === data.userId + "") {
             participantsNew.splice(i, 1);
-            console.log("REMOVED ");
-            console.log(data.userId);
             break;
           }
         }
@@ -76,7 +69,6 @@ const Game = ({ userName, userId }) => {
     };
 
     const guessCallback = (data) => {
-      console.log(data);
       setGuesses((guessesOld) => guessesOld.concat(data));
       if (data.userId === userId && (data.correct || data.guessNumber >= 6)) {
         setAnswer(data.answer);
@@ -84,7 +76,6 @@ const Game = ({ userName, userId }) => {
       }
     };
     const messageCallback = (data) => {
-      console.log(data);
       setChatMessages((old) => old.concat(data));
     };
     socket.on("joinedLobby", joinedLobbyCallback);
@@ -113,7 +104,6 @@ const Game = ({ userName, userId }) => {
         isVirtual,
         virtualStartTime,
       }) => {
-        console.log("isvurtual: " + isVirtual + " virtualstarttime " + virtualStartTime);
         setChatMessages(chatMessages);
         setStatus(status);
         setGuesses(guesses);
@@ -142,11 +132,9 @@ const Game = ({ userName, userId }) => {
     mainBlock = (
       <React.Fragment>
         <Box marginTop="24px" marginBottom="12px">
-          <Typography
-            variant="h5"
-            align="center"
-            sx={{ fontWeight: "bold" }}
-          >{`${tournamentName} starts in ${secondsLeft} seconds`}</Typography>
+          <Typography variant="h5" align="center" sx={{ fontWeight: "bold" }}>
+            {secondsLeft > 0 ? `${tournamentName} starts in ${secondsLeft} seconds` : ""}
+          </Typography>
         </Box>
         <Grid container direction="row" height="calc(100vh - 150px)" width="100%">
           <Box width="calc(50vw - 20px)" height="100%">
@@ -189,11 +177,10 @@ const Game = ({ userName, userId }) => {
       rank =
         guesses
           .filter((g) => isCorrect(g.result))
-          .sort((a, b) => a.seconds - b.seconds)
+          .sort((a, b) => a.virtualSeconds - b.virtualSeconds)
           .findIndex((g) => g.userId === userId) + 1;
       rankText = rank % 10 === 1 ? `${rank}st` : rank % 10 === 2 ? `${rank}nd` : `${rank}th`;
     }
-    console.log(isVirtual + " " + finalGuess?.seconds);
     mainBlock = (
       <React.Fragment>
         <Box marginTop="24px" marginBottom="24px">
@@ -204,7 +191,9 @@ const Game = ({ userName, userId }) => {
                     isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds
                   )}`
                 : `The word is ${answer.toUpperCase()}`
-              : `${-1 * secondsLeft} seconds`}
+              : secondsLeft < 0
+              ? `${-1 * secondsLeft} seconds`
+              : ""}
           </Typography>
         </Box>
         <Grid
@@ -231,6 +220,7 @@ const Game = ({ userName, userId }) => {
             >
               {guesses
                 .sort((a, b) => b.seconds - a.seconds)
+                .filter((a) => a.seconds >= -1 * secondsLeft)
                 .map((g) => (
                   <Guess guess={g} finished={finished} userId={userId} />
                 ))}
@@ -254,7 +244,6 @@ const Game = ({ userName, userId }) => {
           fullWidth
           sx={{ color: "#9453FF" }}
           onClick={() => {
-            console.log("hi");
             post("/api/exitLobby", { tournamentId });
             history.push(`/${communityName}`);
           }}

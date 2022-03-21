@@ -20,7 +20,6 @@ import { secToString, isCorrect } from "../../clientFunctions.js";
 const colors = ["success", "success", "success", "warning", "error", "error"];
 const Tournament = ({ tournament, communityName }) => {
   const listItems = tournament.correctGuesses.map((guess, i) => {
-    console.log(guess);
     return (
       <ListItem key={i}>
         <ListItemAvatar>
@@ -62,7 +61,6 @@ const Tournament = ({ tournament, communityName }) => {
             <Button
               size="large"
               onClick={() => {
-                console.log("hi");
                 history.push(`/${communityName}/${encodeURI(tournament.name)}`);
               }}
             >

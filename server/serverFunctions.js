@@ -71,7 +71,6 @@ const leaveLobby = async (userId, tournamentId) => {
     .emit("leftLobby", {
       userId,
     });
-  console.log({ userId });
   await user.save();
   socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + tournamentId);
   socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + tournamentId + " start");
@@ -112,7 +111,6 @@ const createTournament = async (
 };
 
 const startTournament = async (tournamentId) => {
-  console.log("Start Tournament");
   const participantsMongoDB = await User.find({ tournamentLobbysIn: tournamentId });
   const tournament = await Tournament.findById(tournamentId);
   tournament.status = "inProgress";

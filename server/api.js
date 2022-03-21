@@ -23,7 +23,6 @@ const router = express.Router();
 
 //initialize socket
 const socketManager = require("./server-socket");
-console.log(socketManager);
 const serverFunctions = require("./serverFunctions");
 
 // initialize wordlist
@@ -125,6 +124,8 @@ router.post("/enterLobby", async (req, res) => {
     user.save();
   }
   const participantsMongoDB = await User.find({ tournamentLobbysIn: tournament._id });
+  if (!participants.find((p) => p._id + "" === user._id + ""))
+    participantsMongoDB = participantsMongoDB.concat([user]);
   const participants = participantsMongoDB.map((participant) => {
     const rating =
       participant.ratings.find((entry) => entry.communityId === community._id + "")?.rating || 1200;
@@ -197,7 +198,6 @@ router.post("/guess", async (req, res) => {
   const user = await User.findById(req.user._id);
   const tournament = await Tournament.findById(req.body.tournamentId);
   if (tournament.status !== "inProgress") return;
-  console.log(req.body.guess);
   if (!serverFunctions.isAllowed(req.body.guess)) {
     res.send({ valid: false });
     return;
@@ -300,7 +300,7 @@ router.post("/message", async (req, res) => {
   const message = new Message(info);
   message.save();
   const roomName = "TournamentLobby " + tournament._id + " " + (finished ? "finish" : "start");
-  console.log("sending out socket to " + roomName);
+
   socketManager.getIo().in(roomName).emit("message", info);
   res.send({});
 });

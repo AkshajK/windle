@@ -19,10 +19,10 @@ const addUser = (user, socket) => {
   socketToUserMap[socket.id] = user;
 };
 
-const removeUser = (userobj, socket) => {
+const removeUser = (userobj, socket, server) => {
   if (userobj) {
     const userId = userobj._id + "";
-    delete userToSocketMap[userobj._id];
+    if (!server) delete userToSocketMap[userobj._id];
     User.findById(userobj._id).then((user) => {
       const leftId = user.tournamentLobbysIn[0];
       io.in("TournamentLobby " + leftId).emit("leftLobby", {
@@ -48,7 +48,7 @@ module.exports = {
       socket.on("disconnect", (reason) => {
         const user = getUserFromSocketID(socket.id);
         console.log(`${user?.name || socket.id} has disconnected`);
-        removeUser(user, socket);
+        removeUser(user, socket, reason === "server namespace disconnect");
       });
     });
   },

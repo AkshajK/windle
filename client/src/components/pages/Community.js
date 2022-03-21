@@ -12,7 +12,6 @@ const Community = ({ userName, picture }) => {
   const [leaderboard, setLeaderboard] = useState([]);
   useEffect(() => {
     post("/api/enterCommunity", { name: communityName }).then(({ tournaments, leaderboard }) => {
-      console.log(tournaments);
       setTournaments(tournaments);
       setLeaderboard(leaderboard);
     });
