@@ -9,6 +9,8 @@
 
 const express = require("express");
 
+const lock = require("./lock").lock;
+
 // import models so we can interact with the database
 const User = require("./models/user");
 const Message = require("./models/message");
@@ -29,9 +31,12 @@ const serverFunctions = require("./serverFunctions");
 serverFunctions.setup();
 
 User.find({}).then((users) => {
-  users.forEach((user) => {
-    user.tournamentLobbysIn = [];
-    user.save();
+  users.forEach(({ _id }) => {
+    lock.acquire(_id, async () => {
+      const user = await User.findById(_id);
+      user.tournamentLobbysIn = [];
+      await user.save();
+    });
   });
 });
 
@@ -118,11 +123,15 @@ router.post("/enterLobby", async (req, res) => {
   });
   const tournamentId = tournament._id + "";
   const chatMessages = await Message.find({ tournamentId: tournamentId });
-  const user = await User.findById(req.user._id);
-  if (!user.tournamentLobbysIn.includes(tournamentId)) {
-    user.tournamentLobbysIn = user.tournamentLobbysIn.concat([tournamentId]);
-    user.save();
-  }
+  let user = {};
+  await lock.acquire(req.user._id, async () => {
+    const user = await User.findById(req.user._id);
+    if (!user.tournamentLobbysIn.includes(tournamentId)) {
+      user.tournamentLobbysIn = user.tournamentLobbysIn.concat([tournamentId]);
+      await user.save();
+    }
+  });
+
   let participantsMongoDB = await User.find({ tournamentLobbysIn: tournament._id });
   if (!participantsMongoDB.find((p) => p._id + "" === user._id + ""))
     participantsMongoDB = participantsMongoDB.concat([user]);
@@ -163,10 +172,12 @@ router.post("/enterLobby", async (req, res) => {
   if (isVirtual) {
     let ourEntry = tournament.virtualStartTimes.find((e) => e.userId === req.user._id + "");
     if (!ourEntry) {
-      const tournament2 = await Tournament.findById(tournament._id);
-      ourEntry = { userId: req.user._id + "", startTime: new Date() };
-      tournament2.virtualStartTimes = tournament2.virtualStartTimes.concat([ourEntry]);
-      tournament2.save();
+      await lock.acquire(tournament._id, async () => {
+        const tournament2 = await Tournament.findById(tournament._id);
+        ourEntry = { userId: req.user._id + "", startTime: new Date() };
+        tournament2.virtualStartTimes = tournament2.virtualStartTimes.concat([ourEntry]);
+        await tournament2.save();
+      });
     }
     virtualStartTime = ourEntry.startTime;
   }
@@ -196,47 +207,50 @@ router.post("/exitLobby", (req, res) => {
 
 router.post("/guess", async (req, res) => {
   const user = await User.findById(req.user._id);
-  const tournament = await Tournament.findById(req.body.tournamentId);
-  if (tournament.status !== "inProgress") return;
-  if (!serverFunctions.isAllowed(req.body.guess)) {
-    res.send({ valid: false });
-    return;
-  }
-  const time = (new Date().getTime() - new Date(tournament.startTime).getTime()) * 0.001;
-  const result = req.body.guess
-    .split("")
-    .map((character, i) =>
-      character === tournament.word[i]
-        ? "green"
-        : tournament.word.split("").includes(character)
-        ? "yellow"
-        : "white"
-    );
+  let tournament = {};
+  await lock.acquire(req.body.tournamentId, async () => {
+    tournament = await Tournament.findById(req.body.tournamentId);
+    if (tournament.status !== "inProgress") return;
+    if (!serverFunctions.isAllowed(req.body.guess)) {
+      res.send({ valid: false });
+      return;
+    }
+    const time = (new Date().getTime() - new Date(tournament.startTime).getTime()) * 0.001;
+    const result = req.body.guess
+      .split("")
+      .map((character, i) =>
+        character === tournament.word[i]
+          ? "green"
+          : tournament.word.split("").includes(character)
+          ? "yellow"
+          : "white"
+      );
 
-  const guessNumber =
-    tournament.guesses.filter((guess) => guess.userId === req.user._id + "").length + 1;
-  const correct = req.body.guess === tournament.word;
-  const virtualEntry = tournament.virtualStartTimes.find((e) => e.userId === req.user._id + "");
-  const virtualSeconds = virtualEntry
-    ? time +
-      new Date(tournament.startTime).getTime() * 0.001 -
-      new Date(virtualEntry.startTime).getTime() * 0.001
-    : undefined;
-  const newGuesses = tournament.guesses.concat([
-    {
-      userId: req.user._id + "",
-      userName: user.name,
-      picture: user.picture,
-      seconds: time,
-      virtual: virtualEntry ? true : false,
-      virtualSeconds,
-      guessNumber,
-      guess: req.body.guess,
-      result,
-    },
-  ]);
-  tournament.guesses = newGuesses;
-  tournament.save();
+    const guessNumber =
+      tournament.guesses.filter((guess) => guess.userId === req.user._id + "").length + 1;
+    const correct = req.body.guess === tournament.word;
+    const virtualEntry = tournament.virtualStartTimes.find((e) => e.userId === req.user._id + "");
+    const virtualSeconds = virtualEntry
+      ? time +
+        new Date(tournament.startTime).getTime() * 0.001 -
+        new Date(virtualEntry.startTime).getTime() * 0.001
+      : undefined;
+    const newGuesses = tournament.guesses.concat([
+      {
+        userId: req.user._id + "",
+        userName: user.name,
+        picture: user.picture,
+        seconds: time,
+        virtual: virtualEntry ? true : false,
+        virtualSeconds,
+        guessNumber,
+        guess: req.body.guess,
+        result,
+      },
+    ]);
+    tournament.guesses = newGuesses;
+    await tournament.save();
+  });
   const guess = {
     tournamentId: tournament._id + "",
     userId: req.user._id + "",

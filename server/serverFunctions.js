@@ -4,7 +4,7 @@ const User = require("./models/user");
 const Message = require("./models/message");
 const Tournament = require("./models/tournament");
 const Community = require("./models/community");
-
+const lock = require("./lock").lock;
 const socketManager = require("./server-socket");
 
 const fs = require("fs");
@@ -60,18 +60,21 @@ const isAllowed = (word) => {
   return allowedWords.has(word);
 };
 const leaveLobby = async (userId, tournamentId) => {
-  const user = await User.findById(userId);
   const tournament = await Tournament.findById(tournamentId);
-  if (user.tournamentLobbysIn.includes(tournamentId)) {
-    user.tournamentLobbysIn = user.tournamentLobbysIn.filter((id) => id !== tournamentId);
-  }
+  await lock.acquire(req.user._id, async () => {
+    const user = await User.findById(userId);
+    if (user.tournamentLobbysIn.includes(tournamentId)) {
+      user.tournamentLobbysIn = user.tournamentLobbysIn.filter((id) => id !== tournamentId);
+    }
+    await user.save();
+  });
   socketManager
     .getIo()
     .in("TournamentLobby " + tournamentId)
     .emit("leftLobby", {
       userId,
     });
-  await user.save();
+
   socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + tournamentId);
   socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + tournamentId + " start");
   socketManager.getSocketFromUserID(userId).leave("TournamentLobby " + tournamentId + " finish");
@@ -112,10 +115,12 @@ const createTournament = async (
 
 const startTournament = async (tournamentId) => {
   const participantsMongoDB = await User.find({ tournamentLobbysIn: tournamentId });
-  const tournament = await Tournament.findById(tournamentId);
-  tournament.status = "inProgress";
-  tournament.ratedParticipants = participantsMongoDB.map((participant) => participant._id + "");
-  await tournament.save();
+  await lock.acquire(tournamentId, async () => {
+    const tournament = await Tournament.findById(tournamentId);
+    tournament.status = "inProgress";
+    tournament.ratedParticipants = participantsMongoDB.map((participant) => participant._id + "");
+    await tournament.save();
+  });
   socketManager
     .getIo()
     .in("TournamentLobby " + tournamentId)
