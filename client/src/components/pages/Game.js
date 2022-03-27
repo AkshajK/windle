@@ -7,6 +7,10 @@ import Typography from "@mui/material/Typography";
 import { useHistory } from "react-router-dom";
 import Button from "@mui/material/Button";
 import { socket } from "../../client-socket";
+import ButtonGroup from "@mui/material/ButtonGroup";
+import Stack from "@mui/material/Stack";
+import Snackbar from "@mui/material/Snackbar";
+import Alert from "@mui/material/Alert";
 import ListItemText from "@mui/material/ListItemText";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import Avatar from "@mui/material/Avatar";
@@ -36,6 +40,29 @@ const Game = ({ userName, userId }) => {
   const [virtualStartTime, setVirtualStartTime] = useState(new Date());
   const tournamentName = decodeURI(tournamentNameEncoded);
   const isMobile = useCheckMobileScreen();
+  const [copySuccess, setCopySuccess] = useState(false);
+  const [notifOpen, setNotifOpen] = React.useState(false);
+  const handleOpen = () => {
+    setNotifOpen(true);
+  };
+
+  const handleClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+
+    setNotifOpen(false);
+  };
+  const copyToClipBoard = async (copyMe) => {
+    try {
+      await navigator.clipboard.writeText(copyMe);
+      setCopySuccess(true);
+      setNotifOpen(true);
+    } catch (err) {
+      setCopySuccess(false);
+      setNotifOpen(true);
+    }
+  };
 
   useEffect(() => {
     setMyGuesses(guesses.filter((g) => g.userId === userId).slice(0, 6));
@@ -131,6 +158,9 @@ const Game = ({ userName, userId }) => {
     );
     return () => clearInterval(i);
   }, []);
+  let rankText = "";
+  let finalGuess = undefined;
+  let correct = undefined;
   let mainBlock = <></>;
   if (status === "waiting") {
     mainBlock = (
@@ -197,10 +227,10 @@ const Game = ({ userName, userId }) => {
       </React.Fragment>
     );
   } else if (status === "inProgress") {
-    const finalGuess = myGuesses.length >= 1 && myGuesses[myGuesses.length - 1];
-    const correct = finalGuess ? isCorrect(finalGuess.result) : false;
+    finalGuess = myGuesses.length >= 1 && myGuesses[myGuesses.length - 1];
+    correct = finalGuess ? isCorrect(finalGuess.result) : false;
     let rank = 0;
-    let rankText = "";
+    rankText = "";
     if (finished && correct) {
       rank =
         guesses
@@ -233,7 +263,7 @@ const Game = ({ userName, userId }) => {
         <Grid
           container
           direction="row"
-          height={finished ? "calc(80vh - 138px)" : "calc(100vh - 138px)"}
+          height={finished && !isMobile ? "calc(80vh - 138px)" : "calc(100vh - 138px)"}
           width="100%"
           overflow="auto"
         >
@@ -285,8 +315,17 @@ const Game = ({ userName, userId }) => {
                 ))}
             </List>
           </Box>
+          {isMobile && finished && (
+            <Box height="50vh" width="100vw">
+              <Chat
+                messages={chatMessages.filter((m) => m.finished)}
+                tournamentId={tournamentId}
+                onlineUsers={participants.map((p) => p.userId)}
+              />
+            </Box>
+          )}
         </Grid>
-        {finished && (
+        {!isMobile && finished && (
           <Box height="20vh" width="100vw">
             <Chat
               messages={chatMessages.filter((m) => m.finished)}
@@ -301,19 +340,59 @@ const Game = ({ userName, userId }) => {
   return (
     <Box width="100%" height="100%">
       {mainBlock}
-      <Box marginTop="10px" marginBottom="10px">
-        <Button
-          size="small"
-          fullWidth
-          sx={{ color: "#9453FF" }}
-          onClick={() => {
-            post("/api/exitLobby", { tournamentId });
-            history.push(`/${communityName}`);
-          }}
-        >
-          Return to Home
-        </Button>
+      <Box marginTop={isMobile ? "20px" : "10px"} marginBottom="10px">
+        <ButtonGroup variant={isMobile ? "contained" : "text"} fullWidth size="large">
+          <Button
+            color="success"
+            //sx={{ color: "#9453FF" }}
+            onClick={() => {
+              copyToClipBoard(
+                finished && correct
+                  ? `I placed ${rankText} in ${communityName}'s ${tournamentName}. My time was ${secToString(
+                      isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds,
+                      true
+                    )} and I took ${finalGuess.guessNumber} guesses. ${myGuesses
+                      .map((guess) =>
+                        guess.result
+                          .map((text) =>
+                            text === "green" ? "🟩" : text === "yellow" ? "🟨" : "⬛"
+                          )
+                          .join("")
+                      )
+                      .join(" ")} https://windle.live/${communityName}/${encodeURI(tournamentName)}`
+                  : `Join me in ${communityName}'s ${tournamentName} at https://windle.live/${communityName}/${encodeURI(
+                      tournamentName
+                    )}`
+              );
+            }}
+          >
+            Share
+          </Button>
+          <Button
+            sx={{ color: isMobile ? undefined : "#9453FF" }}
+            onClick={() => {
+              post("/api/exitLobby", { tournamentId });
+              history.push(`/${communityName}`);
+            }}
+          >
+            Return to Home
+          </Button>
+        </ButtonGroup>
       </Box>
+      <Snackbar
+        open={notifOpen}
+        autoHideDuration={3000}
+        onClose={handleClose}
+        message={copySuccess}
+      >
+        <Alert
+          onClose={handleClose}
+          severity={copySuccess ? "success" : "error"}
+          sx={{ width: isMobile ? "100%" : undefined }}
+        >
+          {copySuccess ? "Copied results to clipboard!" : "Did not copy to clipboard"}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
