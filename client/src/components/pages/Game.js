@@ -351,7 +351,7 @@ const Game = ({ userName, userId }) => {
                   ? `I placed ${rankText} in ${communityName}'s ${tournamentName}. My time was ${secToString(
                       isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds,
                       true
-                    )} and I took ${finalGuess.guessNumber} guesses. ${myGuesses
+                    )}. ${myGuesses
                       .map((guess) =>
                         guess.result
                           .map((text) =>
