@@ -239,7 +239,7 @@ const Game = ({ userName, userId }) => {
         >
           <Box
             width={isMobile ? "100vw" : "calc(50vw - 20px)"}
-            height={isMobile ? "480px" : "100%"}
+            height={isMobile ? (finished ? "360px" : "480px") : "100%"}
             overflow="auto"
           >
             <Wordle
