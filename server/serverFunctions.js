@@ -61,7 +61,7 @@ const isAllowed = (word) => {
 };
 const leaveLobby = async (userId, tournamentId) => {
   const tournament = await Tournament.findById(tournamentId);
-  await lock.acquire(req.user._id, async () => {
+  await lock.acquire(userId, async () => {
     const user = await User.findById(userId);
     if (user.tournamentLobbysIn.includes(tournamentId)) {
       user.tournamentLobbysIn = user.tournamentLobbysIn.filter((id) => id !== tournamentId);

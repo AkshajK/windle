@@ -18,7 +18,7 @@ import Box from "@mui/material/Box";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import { secToString, isCorrect } from "../../clientFunctions.js";
 const colors = ["success", "success", "success", "warning", "error", "error"];
-const Tournament = ({ tournament, communityName }) => {
+const Tournament = ({ tournament, communityName, isMobile }) => {
   const listItems = tournament.correctGuesses.map((guess, i) => {
     return (
       <ListItem key={i}>
@@ -42,11 +42,13 @@ const Tournament = ({ tournament, communityName }) => {
   return (
     <Card
       variant={
-        tournament.status === "complete" || (tournament.status === "inProgress" && "outlined")
+        tournament.status === "complete" || tournament.status === "inProgress"
+          ? "outlined"
+          : undefined
       }
-      raised={tournament.status !== "complete" && tournament.status !== "inprogress"}
+      raised={tournament.status !== "complete" && tournament.status !== "inProgress"}
       sx={{
-        margin: "15px 24px 15px 0px",
+        margin: isMobile ? "15px 12px 15px 12px" : "15px 24px 15px 0px",
         backgroundColor: tournament.status === "waiting" && "#B8FFCC",
         //opacity: tournament.status !== "waiting" && "70%",
       }}

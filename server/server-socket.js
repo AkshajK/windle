@@ -1,4 +1,6 @@
 let io;
+const lock = require("./lock").lock;
+
 const userToSocketMap = {}; // maps user ID to socket object
 const socketToUserMap = {}; // maps socket ID to user object
 const User = require("./models/user");
@@ -19,11 +21,12 @@ const addUser = (user, socket) => {
   socketToUserMap[socket.id] = user;
 };
 
-const removeUser = (userobj, socket, server) => {
+const removeUser = async (userobj, socket, server) => {
   if (userobj) {
     const userId = userobj._id + "";
     if (!server) delete userToSocketMap[userobj._id];
-    User.findById(userobj._id).then((user) => {
+    await lock.acquire(userobj._id, async () => {
+      const user = await User.findById(userobj._id);
       const leftId = user.tournamentLobbysIn[0];
       io.in("TournamentLobby " + leftId).emit("leftLobby", {
         userId,
@@ -31,7 +34,7 @@ const removeUser = (userobj, socket, server) => {
 
       user.tournamentLobbysIn = user.tournamentLobbysIn.shift();
       user.markModified("tournamentLobbysIn");
-      user.save();
+      await user.save();
       socket.leave("TournamentLobby " + leftId);
       socket.leave("TournamentLobby " + leftId + " start");
       socket.leave("TournamentLobby " + leftId + " finish");

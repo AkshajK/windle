@@ -125,7 +125,7 @@ router.post("/enterLobby", async (req, res) => {
   const chatMessages = await Message.find({ tournamentId: tournamentId });
   let user = {};
   await lock.acquire(req.user._id, async () => {
-    const user = await User.findById(req.user._id);
+    user = await User.findById(req.user._id);
     if (!user.tournamentLobbysIn.includes(tournamentId)) {
       user.tournamentLobbysIn = user.tournamentLobbysIn.concat([tournamentId]);
       await user.save();
@@ -137,7 +137,8 @@ router.post("/enterLobby", async (req, res) => {
     participantsMongoDB = participantsMongoDB.concat([user]);
   const participants = participantsMongoDB.map((participant) => {
     const rating =
-      participant.ratings.find((entry) => entry.communityId === community._id + "")?.rating || 1200;
+      (participant.ratings || []).find((entry) => entry.communityId === community._id + "")
+        ?.rating || 1200;
     return {
       rating,
       name: participant.name,
@@ -208,6 +209,7 @@ router.post("/exitLobby", (req, res) => {
 router.post("/guess", async (req, res) => {
   const user = await User.findById(req.user._id);
   let tournament = {};
+
   await lock.acquire(req.body.tournamentId, async () => {
     tournament = await Tournament.findById(req.body.tournamentId);
     if (tournament.status !== "inProgress") return;
@@ -250,47 +252,47 @@ router.post("/guess", async (req, res) => {
     ]);
     tournament.guesses = newGuesses;
     await tournament.save();
-  });
-  const guess = {
-    tournamentId: tournament._id + "",
-    userId: req.user._id + "",
-    userName: user.name,
-    picture: user.picture,
-    virtual: virtualEntry ? true : false,
-    virtualSeconds,
-    guessNumber,
-    seconds: time,
-    result,
-    // guess: req.body.guess,
-    correct,
-  };
+    const guess = {
+      tournamentId: tournament._id + "",
+      userId: req.user._id + "",
+      userName: user.name,
+      picture: user.picture,
+      virtual: virtualEntry ? true : false,
+      virtualSeconds,
+      guessNumber,
+      seconds: time,
+      result,
+      // guess: req.body.guess,
+      correct,
+    };
 
-  socketManager
-    .getSocketFromUserID(req.user._id)
-    .to("TournamentLobby " + req.body.tournamentId + " start")
-    .emit("guess", guess);
-  guess.guess = req.body.guess;
-  guess.answer = (correct || guessNumber >= 6) && tournament.word;
-  socketManager.getSocketFromUserID(req.user._id).emit("guess", guess);
-  socketManager
-    .getIo()
-    .in("TournamentLobby " + req.body.tournamentId + " finish")
-    .emit("guess", guess);
-  res.send({
-    result,
-    valid: true,
-    correct,
-    guesses: correct || guessNumber >= 6 ? tournament.guesses : [],
-    answer: (correct || guessNumber >= 6) && tournament.word,
+    socketManager
+      .getSocketFromUserID(req.user._id)
+      .to("TournamentLobby " + req.body.tournamentId + " start")
+      .emit("guess", guess);
+    guess.guess = req.body.guess;
+    guess.answer = (correct || guessNumber >= 6) && tournament.word;
+    socketManager.getSocketFromUserID(req.user._id).emit("guess", guess);
+    socketManager
+      .getIo()
+      .in("TournamentLobby " + req.body.tournamentId + " finish")
+      .emit("guess", guess);
+    res.send({
+      result,
+      valid: true,
+      correct,
+      guesses: correct || guessNumber >= 6 ? tournament.guesses : [],
+      answer: (correct || guessNumber >= 6) && tournament.word,
+    });
+    if (correct || guessNumber >= 6) {
+      socketManager
+        .getSocketFromUserID(req.user._id)
+        .leave("TournamentLobby " + req.body.tournamentId + " start");
+      socketManager
+        .getSocketFromUserID(req.user._id)
+        .join("TournamentLobby " + req.body.tournamentId + " finish");
+    }
   });
-  if (correct || guessNumber >= 6) {
-    socketManager
-      .getSocketFromUserID(req.user._id)
-      .leave("TournamentLobby " + req.body.tournamentId + " start");
-    socketManager
-      .getSocketFromUserID(req.user._id)
-      .join("TournamentLobby " + req.body.tournamentId + " finish");
-  }
 });
 
 router.post("/message", async (req, res) => {

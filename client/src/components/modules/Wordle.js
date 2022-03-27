@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
 import { get, post } from "../../utilities";
-
+import useCheckMobileScreen from "./useCheckMobileScreen";
 import Card from "@mui/material/Card";
 import Paper from "@mui/material/Card";
 import Grid from "@mui/material/Grid";
@@ -13,13 +13,15 @@ import ListItem from "@mui/material/ListItem";
 import Divider from "@mui/material/Divider";
 import ListItemText from "@mui/material/ListItemText";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
-
+import Keyboard from "../modules/Keyboard.js";
+import Box from "@mui/material/Box";
 const Wordle = ({ tournamentId, guesses, finished, setGuesses }) => {
   const fiveEmpty = ["", "", "", "", ""];
   const [letters, setLetters] = useState(fiveEmpty.concat([""]).map(() => fiveEmpty.concat([])));
   const [colors, setColors] = useState(
     fiveEmpty.concat("").map(() => fiveEmpty.concat([]).map(() => "#FFFFFF"))
   );
+  const isMobile = useCheckMobileScreen();
   const [currentRow, setCurrentRow] = useState(0);
   useEffect(() => {
     setLetters((oldLetters) => {
@@ -109,18 +111,18 @@ const Wordle = ({ tournamentId, guesses, finished, setGuesses }) => {
   }, [letters, currentRow]);
   return (
     <div width="100%">
-      <Grid container spacing={3}>
+      <Grid container spacing={isMobile ? 2 : 3}>
         {letters.map((row, i) => (
-          <Grid container item spacing={2} justifyContent="center">
+          <Grid container item spacing={2} justifyContent="center" key={i}>
             {row.map((square, j) => (
-              <Grid item>
+              <Grid item key={i + " " + j}>
                 <Paper
                   //variant="outlined"
                   square
                   elevation={2}
                   sx={{
-                    width: "57px",
-                    height: "57px",
+                    width: isMobile ? "45px" : "57px",
+                    height: isMobile ? "45px" : "57px",
                     alignItems: "center",
                     display: "flex",
                     justifyContent: "center",
@@ -136,6 +138,11 @@ const Wordle = ({ tournamentId, guesses, finished, setGuesses }) => {
           </Grid>
         ))}
       </Grid>
+      {!finished && (
+        <Box marginTop={3}>
+          <Keyboard myGuesses={guesses} onInput={onInput} />
+        </Box>
+      )}
     </div>
   );
 };

@@ -17,6 +17,8 @@ import Box from "@mui/material/Box";
 import Chat from "../modules/Chat.js";
 import { get, post } from "../../utilities";
 import { secToString, isCorrect } from "../../clientFunctions.js";
+import useCheckMobileScreen from "../modules/useCheckMobileScreen";
+
 const Game = ({ userName, userId }) => {
   const { communityName, tournamentNameEncoded } = useParams();
   const history = useHistory();
@@ -33,6 +35,8 @@ const Game = ({ userName, userId }) => {
   const [isVirtual, setIsVirtual] = useState(false);
   const [virtualStartTime, setVirtualStartTime] = useState(new Date());
   const tournamentName = decodeURI(tournamentNameEncoded);
+  const isMobile = useCheckMobileScreen();
+
   useEffect(() => {
     setMyGuesses(guesses.filter((g) => g.userId === userId).slice(0, 6));
   }, [guesses]);
@@ -49,7 +53,6 @@ const Game = ({ userName, userId }) => {
       socket.off("start tournament", startTournamentCallback);
     };
   }, [tournamentId]);
-  console.log(participants);
   useEffect(() => {
     const joinedLobbyCallback = (data) => {
       setParticipants((participantsOld) => participantsOld.concat(data));
@@ -133,19 +136,37 @@ const Game = ({ userName, userId }) => {
     mainBlock = (
       <React.Fragment>
         <Box marginTop="24px" marginBottom="12px">
-          <Typography variant="h5" align="center" sx={{ fontWeight: "bold" }}>
-            {secondsLeft > 0 ? `${tournamentName} starts in ${secondsLeft} seconds` : ""}
+          <Typography
+            variant="h5"
+            align="center"
+            sx={{ fontWeight: "bold", fontSize: isMobile && "20px" }}
+          >
+            {secondsLeft > 0
+              ? `${tournamentName} starts in ${secToString(secondsLeft, isMobile)}`
+              : `${tournamentName} starts in `}
           </Typography>
         </Box>
-        <Grid container direction="row" height="calc(100vh - 150px)" width="100%">
-          <Box width="calc(50vw - 20px)" height="100%">
+        <Grid
+          container
+          direction={isMobile ? "column" : "row"}
+          height="calc(100vh - 138px)"
+          width="100%"
+        >
+          <Box
+            width={isMobile ? "100vw" : "calc(50vw - 20px)"}
+            height={isMobile ? "calc(50vh - 69px)" : "100%"}
+          >
             <Chat
               messages={chatMessages.filter((m) => !m.finished)}
               tournamentId={tournamentId}
               onlineUsers={participants.map((p) => p.userId)}
             />
           </Box>
-          <Box width="calc(50vw - 20px)" height="100%">
+          <Box
+            width={isMobile ? "100vw" : "calc(50vw - 20px)"}
+            height={isMobile ? "calc(50vh - 89px)" : "100%"}
+            marginTop={isMobile && "20px"}
+          >
             <List
               sx={{
                 width: "100%",
@@ -157,6 +178,7 @@ const Game = ({ userName, userId }) => {
             >
               {participants.map((user, i) => (
                 <Guess
+                  key={i}
                   online={true}
                   guess={{
                     userName: user.name,
@@ -190,25 +212,36 @@ const Game = ({ userName, userId }) => {
     mainBlock = (
       <React.Fragment>
         <Box marginTop="24px" marginBottom="24px">
-          <Typography variant="h5" align="center" sx={{ fontWeight: "bold" }} color="#306AFF">
+          <Typography
+            variant="h5"
+            align="center"
+            sx={{ fontWeight: "bold", fontSize: isMobile && "20px" }}
+            color="#306AFF"
+          >
             {finished
               ? correct
                 ? `${rankText} place! You took ${secToString(
-                    isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds
+                    isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds,
+                    isMobile
                   )}`
                 : `The word is ${answer.toUpperCase()}`
               : secondsLeft < 0
-              ? `${-1 * secondsLeft} seconds`
+              ? `${secToString(-1 * secondsLeft, isMobile)}`
               : ""}
           </Typography>
         </Box>
         <Grid
           container
           direction="row"
-          height={finished ? "calc(80vh - 150px)" : "calc(100vh - 150px)"}
+          height={finished ? "calc(80vh - 138px)" : "calc(100vh - 138px)"}
           width="100%"
+          overflow="auto"
         >
-          <Box width="calc(50vw - 20px)" height="100%">
+          <Box
+            width={isMobile ? "100vw" : "calc(50vw - 20px)"}
+            height={isMobile ? "480px" : "100%"}
+            overflow="auto"
+          >
             <Wordle
               tournamentId={tournamentId}
               guesses={myGuesses}
@@ -216,7 +249,11 @@ const Game = ({ userName, userId }) => {
               setGuesses={setGuesses}
             />
           </Box>
-          <Box width="calc(50vw - 20px)" height="100%">
+          <Box
+            width={isMobile ? "100vw" : "calc(50vw - 20px)"}
+            height={isMobile ? undefined : "100%"}
+            maxHeight="100vh"
+          >
             <List
               sx={{
                 bgcolor: "background.paper",
@@ -237,8 +274,9 @@ const Game = ({ userName, userId }) => {
                   console.log(g);
                   return g;
                 })
-                .map((g) => (
+                .map((g, i) => (
                   <Guess
+                    key={i}
                     guess={g}
                     finished={finished}
                     userId={g.userId}
@@ -263,7 +301,7 @@ const Game = ({ userName, userId }) => {
   return (
     <Box width="100%" height="100%">
       {mainBlock}
-      <Box marginTop="32px">
+      <Box marginTop="10px" marginBottom="10px">
         <Button
           size="small"
           fullWidth

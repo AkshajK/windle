@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Switch, BrowserRouter as Router, Route } from "react-router-dom";
-import NotFound from "./pages/NotFound.js";
+import { Switch, BrowserRouter as Router, Route, Redirect } from "react-router-dom";
+import Login from "./pages/Login.js";
 import Community from "./pages/Community.js";
 import Game from "./pages/Game.js";
 import LoginButton from "./modules/LoginButton.js";
@@ -45,18 +45,30 @@ const App = () => {
     post("/api/logout");
   };
 
-  if (!userId) {
-    return <LoginButton handleLogin={handleLogin} handleLogout={handleLogout} userId={userId} />;
-  }
+  const loginButton = (
+    <LoginButton handleLogin={handleLogin} handleLogout={handleLogout} userId={userId} />
+  );
+
   return (
     <>
       <Router>
         <Switch>
           <Route path="/:communityName/:tournamentNameEncoded">
-            <Game userName={userName} userId={userId} />
+            {userId ? (
+              <Game userName={userName} userId={userId} />
+            ) : (
+              <Login handleLogin={handleLogin} gameParams />
+            )}
           </Route>
           <Route path="/:communityName">
-            <Community userName={userName} picture={picture} />
+            {userId ? (
+              <Community userName={userName} picture={picture} />
+            ) : (
+              <Login handleLogin={handleLogin} />
+            )}
+          </Route>
+          <Route path="/">
+            <Redirect to="/MIT" />
           </Route>
         </Switch>
       </Router>
