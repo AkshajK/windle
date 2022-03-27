@@ -359,8 +359,10 @@ const Game = ({ userName, userId }) => {
                           )
                           .join("")
                       )
-                      .join(" ")} https://windle.live/${communityName}/${encodeURI(tournamentName)}`
-                  : `Join me in ${communityName}'s ${tournamentName} at https://windle.live/${communityName}/${encodeURI(
+                      .join(" ")} https://www.windle.live/${communityName}/${encodeURI(
+                      tournamentName
+                    )}`
+                  : `Join me in ${communityName}'s ${tournamentName} at https://www.windle.live/${communityName}/${encodeURI(
                       tournamentName
                     )}`
               );
