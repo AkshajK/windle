@@ -59,7 +59,7 @@ const Guess = ({ guess, finished, size, userId, online, hide, large }) => {
           width: "fit-content",
         }}
       >
-        {Array.from(Array(guess.guess?.length || 5).keys()).map((i) => (
+        {Array.from(Array(guess?.guess?.length || 5).keys()).map((i) => (
           <Grid item key={i}>
             <Paper
               //variant="outlined"
