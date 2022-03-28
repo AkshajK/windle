@@ -18,7 +18,7 @@ import Divider from "@mui/material/Divider";
 import ListItemText from "@mui/material/ListItemText";
 import { secToString, isCorrect, StyledBadge } from "../../clientFunctions.js";
 
-const Guess = ({ guess, finished, size, userId, online, hide }) => {
+const Guess = ({ guess, finished, size, userId, online, hide, large }) => {
   const isMobile = useCheckMobileScreen();
 
   const small = size === "small";
@@ -66,12 +66,12 @@ const Guess = ({ guess, finished, size, userId, online, hide }) => {
               square
               elevation={2}
               sx={{
-                width: small || isMobile ? "20px" : "30px",
-                height: small || isMobile ? "20px" : "30px",
+                width: !large && (small || isMobile) ? "20px" : "30px",
+                height: !large && (small || isMobile) ? "20px" : "30px",
                 alignItems: "center",
                 display: "flex",
                 justifyContent: "center",
-                fontSize: small || isMobile ? "12px" : "16px",
+                fontSize: !large && (small || isMobile) ? "12px" : "16px",
                 fontWeight: "500",
                 backgroundColor: guess.result[i],
                 margin: "4px",
