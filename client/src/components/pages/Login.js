@@ -60,7 +60,6 @@ const Login = ({ handleLogin, gameParams }) => {
                   finished
                   hide
                   online
-                  large
                 />
               </Box>
             </Box>

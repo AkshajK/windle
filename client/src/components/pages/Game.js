@@ -351,7 +351,7 @@ const Game = ({ userName, userId }) => {
                   ? `I placed ${rankText} in ${communityName}'s ${tournamentName}. My time was ${secToString(
                       isVirtual ? finalGuess?.virtualSeconds : finalGuess?.seconds,
                       true
-                    )}. ${myGuesses
+                    )}. \n\n${myGuesses
                       .map((guess) =>
                         guess.result
                           .map((text) =>
@@ -359,7 +359,7 @@ const Game = ({ userName, userId }) => {
                           )
                           .join("")
                       )
-                      .join("\n")} https://www.windle.live/${communityName}/${encodeURI(
+                      .join("\r\n")}\r\nhttps://www.windle.live/${communityName}/${encodeURI(
                       tournamentName
                     )}`
                   : `Join me in ${communityName}'s ${tournamentName} at https://www.windle.live/${communityName}/${encodeURI(
