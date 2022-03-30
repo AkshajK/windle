@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import { useHistory } from "react-router-dom";
 import Badge from "@mui/material/Badge";
 import { get, post } from "../../utilities";
-
+import ToggleButton from "@mui/material/ToggleButton";
+import ToggleButtonGroup from "@mui/material/ToggleButtonGroup";
 import Card from "@mui/material/Card";
 import CardActions from "@mui/material/CardActions";
 import CardContent from "@mui/material/CardContent";
@@ -18,27 +19,36 @@ import Box from "@mui/material/Box";
 import ListItemAvatar from "@mui/material/ListItemAvatar";
 import { secToString, isCorrect } from "../../clientFunctions.js";
 const colors = ["success", "success", "success", "warning", "error", "error"];
-const Tournament = ({ tournament, communityName, isMobile }) => {
-  const listItems = tournament.correctGuesses.map((guess, i) => {
-    return (
-      <ListItem key={i}>
-        <ListItemAvatar>
-          <Badge
-            badgeContent={guess.guessNumber && guess.guessNumber + "/6"}
-            color={guess.guessNumber && colors[guess.guessNumber - 1]}
-          >
-            <Avatar alt={guess.userName} src={guess.picture} />
-          </Badge>
-        </ListItemAvatar>
-        <ListItemText
-          sx={{ marginLeft: "8px" }}
-          primary={guess.userName}
-          secondary={secToString(guess.virtual ? guess.virtualSeconds : guess.seconds, true)}
-        />
-      </ListItem>
-    );
-  });
+const Tournament = ({ tournament, communityName, isMobile, admin }) => {
+  const [showVirtual, setShowVirtual] = useState(false);
+  const [deleted, setDeleted] = useState(false);
+  const listItems = tournament.correctGuesses
+    .sort(
+      (a, b) =>
+        (a.virtual ? a.virtualSeconds : a.seconds) - (b.virtual ? b.virtualSeconds : b.seconds)
+    )
+    .filter((a) => showVirtual || !a.virtual)
+    .map((guess, i) => {
+      return (
+        <ListItem key={i} style={{ opacity: guess.virtual ? 0.7 : 1 }}>
+          <ListItemAvatar>
+            <Badge
+              badgeContent={guess.guessNumber && guess.guessNumber + "/6"}
+              color={guess.guessNumber && colors[guess.guessNumber - 1]}
+            >
+              <Avatar alt={guess.userName} src={guess.picture} />
+            </Badge>
+          </ListItemAvatar>
+          <ListItemText
+            sx={{ marginLeft: "8px" }}
+            primary={guess.userName}
+            secondary={secToString(guess.virtual ? guess.virtualSeconds : guess.seconds, true)}
+          />
+        </ListItem>
+      );
+    });
   const history = useHistory();
+  if (deleted) return <></>;
   return (
     <Card
       variant={
@@ -54,6 +64,17 @@ const Tournament = ({ tournament, communityName, isMobile }) => {
       }}
     >
       <CardContent>
+        {admin && (
+          <Button
+            variant="contained"
+            onClick={() => {
+              post("/api/deleteTournament", { tournamentId: tournament.id });
+              setDeleted(true);
+            }}
+          >
+            Delete
+          </Button>
+        )}
         <Grid container direction="row" width="100%">
           <Box width="50%">
             <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
@@ -70,18 +91,31 @@ const Tournament = ({ tournament, communityName, isMobile }) => {
             </Button>
           </Box>
           <Box width="50%">
+            <ToggleButtonGroup
+              color="primary"
+              value={showVirtual}
+              exclusive
+              onChange={() => {
+                setShowVirtual((v) => !v);
+              }}
+            >
+              <ToggleButton value={false}>Official</ToggleButton>
+              <ToggleButton value={true}>Unofficial</ToggleButton>
+            </ToggleButtonGroup>
             {listItems.length > 0 && (
-              <List
-                sx={{
-                  width: "100%",
-                  maxWidth: 360,
-                  bgcolor: "background.paper",
-                  overflow: "auto",
-                  maxHeight: 300,
-                }}
-              >
-                {listItems}
-              </List>
+              <Fragment>
+                <List
+                  sx={{
+                    width: "100%",
+                    maxWidth: 360,
+                    bgcolor: "background.paper",
+                    overflow: "auto",
+                    maxHeight: 300,
+                  }}
+                >
+                  {listItems}
+                </List>
+              </Fragment>
             )}
           </Box>
         </Grid>

@@ -17,6 +17,7 @@ const App = () => {
   const [userId, setUserId] = useState(undefined);
   const [userName, setUserName] = useState(undefined);
   const [picture, setPicture] = useState(undefined);
+  const [isAdmin, setIsAdmin] = useState(undefined);
   useEffect(() => {
     get("/api/whoami").then((user) => {
       if (user._id) {
@@ -24,6 +25,7 @@ const App = () => {
         setUserId(user._id);
         setUserName(user.name);
         setPicture(user.picture);
+        setIsAdmin(user.admin);
       }
     });
   }, []);
@@ -53,6 +55,13 @@ const App = () => {
     <>
       <Router>
         <Switch>
+          <Route path="/admin/:communityName">
+            {userId ? (
+              <Community userName={userName} picture={picture} admin={isAdmin} />
+            ) : (
+              <Login handleLogin={handleLogin} />
+            )}
+          </Route>
           <Route path="/:communityName/:tournamentNameEncoded">
             {userId ? (
               <Game userName={userName} userId={userId} />

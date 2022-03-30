@@ -3,12 +3,13 @@ import { useParams } from "react-router-dom";
 import { get, post } from "../../utilities";
 import Tournament from "../modules/Tournament.js";
 import Grid from "@mui/material/Grid";
+import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
 import Avatar from "@mui/material/Avatar";
 import Box from "@mui/material/Box";
 import useCheckMobileScreen from "../modules/useCheckMobileScreen";
-
-const Community = ({ userName, picture }) => {
+import AdminPanel from "../modules/AdminPanel.js";
+const Community = ({ userName, picture, admin }) => {
   const { communityName } = useParams();
   const [tournaments, setTournaments] = useState([]);
   const [leaderboard, setLeaderboard] = useState([]);
@@ -64,10 +65,17 @@ const Community = ({ userName, picture }) => {
         height={isMobile ? "calc(100% - 250px)" : "100%"}
         overflow="auto"
       >
+        {admin && <AdminPanel communityName={communityName} />}
         {tournamentsShowing
           .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
           .map((t, i) => (
-            <Tournament key={i} communityName={communityName} tournament={t} isMobile={isMobile} />
+            <Tournament
+              key={i}
+              communityName={communityName}
+              tournament={t}
+              isMobile={isMobile}
+              admin={admin}
+            />
           ))}
       </Box>
     </Grid>

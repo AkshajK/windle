@@ -93,6 +93,7 @@ router.post("/enterCommunity", async (req, res) => {
   const tournamentsMongoDB = await Tournament.find({ communityId: community._id });
   const tournaments = tournamentsMongoDB.map((tournament) => {
     return {
+      id: tournament._id + "",
       name: tournament.name,
       startTime: tournament.startTime,
       correctGuesses: tournament.guesses
@@ -319,6 +320,25 @@ router.post("/message", async (req, res) => {
 
   socketManager.getIo().in(roomName).emit("message", info);
   res.send({});
+});
+
+router.post("/deleteTournament", async (req, res) => {
+  if (req.user.admin) {
+    await Tournament.deleteOne({ _id: req.body.tournamentId });
+    res.send({});
+  }
+});
+
+router.post("/newTournament", async (req, res) => {
+  if (req.user.admin) {
+    await serverFunctions.createTournament(
+      req.body.name,
+      req.body.communityName,
+      req.body.startTime,
+      req.body.timeToHaveLobbyOpen
+    );
+    res.send({});
+  }
 });
 
 // anything else falls to this "not found" case

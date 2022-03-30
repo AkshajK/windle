@@ -12,6 +12,10 @@ const UserSchema = new mongoose.Schema({
     type: [String],
     default: [],
   },
+  admin: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // compile model from schema
