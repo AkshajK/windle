@@ -125,6 +125,7 @@ router.post("/enterLobby", async (req, res) => {
   const tournamentId = tournament._id + "";
   const chatMessages = await Message.find({ tournamentId: tournamentId });
   let user = {};
+  if (!req.user) return;
   await lock.acquire(req.user._id, async () => {
     user = await User.findById(req.user._id);
     if (!user.tournamentLobbysIn.includes(tournamentId)) {
