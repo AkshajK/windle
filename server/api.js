@@ -336,7 +336,7 @@ router.post("/newTournament", async (req, res) => {
       req.body.name,
       req.body.communityName,
       req.body.startTime,
-      req.body.timeToHaveLobbyOpen
+      req.body.timeToHaveLobbyOpen * 60
     );
     res.send({});
   }
