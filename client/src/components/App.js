@@ -5,7 +5,7 @@ import Community from "./pages/Community.js";
 import Game from "./pages/Game.js";
 import LoginButton from "./modules/LoginButton.js";
 import "../utilities.css";
-
+import Disconnected from "./pages/Disconnected.js";
 import { socket } from "../client-socket.js";
 
 import { get, post } from "../utilities";
@@ -18,6 +18,24 @@ const App = () => {
   const [userName, setUserName] = useState(undefined);
   const [picture, setPicture] = useState(undefined);
   const [isAdmin, setIsAdmin] = useState(undefined);
+  const [disconnected, setDisconnected] = useState(false);
+  const error = () => {
+    setDisconnected(true);
+  };
+  useEffect(() => {
+    const onDisconnect = (reason) => {
+      if (reason === "io server disconnect") {
+        error();
+      } else {
+        console.log("DISCONNECTED");
+        console.log(reason);
+      }
+    };
+    socket.on("disconnect", onDisconnect);
+    return () => {
+      socket.off("disconnect", onDisconnect);
+    };
+  }, []);
   useEffect(() => {
     get("/api/whoami").then((user) => {
       if (user._id) {
@@ -51,6 +69,7 @@ const App = () => {
     <LoginButton handleLogin={handleLogin} handleLogout={handleLogout} userId={userId} />
   );
 
+  if (disconnected) return <Disconnected />;
   return (
     <>
       <Router>

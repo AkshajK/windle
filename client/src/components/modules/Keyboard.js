@@ -25,6 +25,9 @@ const Keyboard = ({ myGuesses, onInput }) => {
       if (guess.result[i] === "green") colors[guess.guess[i].toUpperCase()] = "green";
       else if (guess.result[i] === "yellow" && colors[guess.guess[i].toUpperCase()] !== "green")
         colors[guess.guess[i].toUpperCase()] = "yellow";
+      else if (guess.result[i] === "#CCCCCC") {
+        colors[guess.guess[i].toUpperCase()] = "#CCCCCC";
+      }
     }
   });
   console.log(colors);

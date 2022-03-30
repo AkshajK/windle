@@ -219,15 +219,16 @@ router.post("/guess", async (req, res) => {
       return;
     }
     const time = (new Date().getTime() - new Date(tournament.startTime).getTime()) * 0.001;
-    const result = req.body.guess
-      .split("")
-      .map((character, i) =>
-        character === tournament.word[i]
-          ? "green"
-          : tournament.word.split("").includes(character)
-          ? "yellow"
-          : "white"
-      );
+    const result = req.body.guess.split("").map((character, i) => {
+      if (character === tournament.word[i]) return "green";
+      if (!tournament.word.split("").includes(character)) return "#CCCCCC";
+      var actualCount = 0;
+      var fakeCount = 1;
+      for (var j = 0; j < 5; j++) if (tournament.word[j] === character) actualCount++;
+      for (var j = 0; j < i; j++) if (req.body.guess[j] === character) fakeCount++;
+      if (fakeCount <= actualCount) return "yellow";
+      return "#CCCCCC";
+    });
 
     const guessNumber =
       tournament.guesses.filter((guess) => guess.userId === req.user._id + "").length + 1;
