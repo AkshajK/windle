@@ -225,7 +225,9 @@ router.post("/guess", async (req, res) => {
       var actualCount = 0;
       var fakeCount = 1;
       for (var j = 0; j < 5; j++) if (tournament.word[j] === character) actualCount++;
-      for (var j = 0; j < i; j++) if (req.body.guess[j] === character) fakeCount++;
+      for (var j = 0; j < 5; j++)
+        if (req.body.guess[j] === character && (j < i || character === tournament.word[j]))
+          fakeCount++;
       if (fakeCount <= actualCount) return "yellow";
       return "#CCCCCC";
     });
