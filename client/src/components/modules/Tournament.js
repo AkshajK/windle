@@ -20,7 +20,7 @@ import ListItemAvatar from "@mui/material/ListItemAvatar";
 import { secToString, isCorrect } from "../../clientFunctions.js";
 const colors = ["success", "success", "success", "warning", "error", "error"];
 const Tournament = ({ tournament, communityName, isMobile, admin }) => {
-  const [showVirtual, setShowVirtual] = useState(false);
+  const [showVirtual, setShowVirtual] = useState(true);
   const [deleted, setDeleted] = useState(false);
   const listItems = tournament.correctGuesses
     .sort(
