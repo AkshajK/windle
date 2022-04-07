@@ -93,7 +93,7 @@ const Tournament = ({ tournament, communityName, isMobile, admin }) => {
                 history.push(`/${communityName}/${encodeURI(tournament.name)}`);
               }}
             >
-              {tournament.status === "Complete" ? "Compete (Unofficial)" : "Compete"}
+              {tournament.status === "complete" ? "Compete (Unofficial)" : "Compete"}
             </Button>
           </Box>
           <Box width="50%">
