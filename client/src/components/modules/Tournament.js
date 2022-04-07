@@ -34,7 +34,13 @@ const Tournament = ({ tournament, communityName, isMobile, admin }) => {
     .filter((a) => showVirtual || a.seconds <= 86400)
     .map((guess, i) => {
       return (
-        <ListItem key={i} style={{ opacity: guess.seconds > 86400 ? 0.7 : 1 }}>
+        <ListItem
+          key={i}
+          style={{
+            opacity: guess.seconds > 86400 ? 0.7 : 1,
+            backgroundColor: tournament.status === "inProgress" && "#B8FFCC",
+          }}
+        >
           <ListItemAvatar>
             <Badge
               badgeContent={guess.guessNumber && guess.guessNumber + "/6"}
@@ -91,24 +97,26 @@ const Tournament = ({ tournament, communityName, isMobile, admin }) => {
             </Button>
           </Box>
           <Box width="50%">
-            <ToggleButtonGroup
-              color="primary"
-              value={showVirtual}
-              exclusive
-              onChange={() => {
-                setShowVirtual((v) => !v);
-              }}
-            >
-              <ToggleButton value={false}>Official</ToggleButton>
-              <ToggleButton value={true}>Unofficial</ToggleButton>
-            </ToggleButtonGroup>
+            {tournament.status === "complete" && (
+              <ToggleButtonGroup
+                color="primary"
+                value={showVirtual}
+                exclusive
+                onChange={() => {
+                  setShowVirtual((v) => !v);
+                }}
+              >
+                <ToggleButton value={false}>Official</ToggleButton>
+                <ToggleButton value={true}>Unofficial</ToggleButton>
+              </ToggleButtonGroup>
+            )}
             {listItems.length > 0 && (
               <Fragment>
                 <List
                   sx={{
                     width: "100%",
                     maxWidth: 360,
-                    bgcolor: "background.paper",
+                    bgcolor: tournament.status === "inProgress" ? "#B8FFCC" : "background.paper",
                     overflow: "auto",
                     maxHeight: 300,
                   }}

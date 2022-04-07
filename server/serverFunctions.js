@@ -54,14 +54,14 @@ const setup = async () => {
         `Scheduled tournament ${tournament.name} to start in ${timeUntilStart * 0.001} seconds`
       );
     }
+    if (tournament.status === "inProgress") {
+      const startTime = tournament.startTime;
+      const timeUntilEnd = new Date(startTime).getTime() + 86400 * 1000 - new Date().getTime();
+      setTimeout(() => {
+        endTournament(tournament._id);
+      }, timeUntilEnd);
+    }
   });
-  if (tournament.status === "inProgress") {
-    const startTime = tournament.startTime;
-    const timeUntilEnd = new Date(startTime).getTime() + 86400 * 1000 - new Date().getTime();
-    setTimeout(() => {
-      endTournament(tournament._id);
-    }, timeUntilEnd);
-  }
 };
 
 const isAllowed = (word) => {
