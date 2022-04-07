@@ -20,17 +20,21 @@ import ListItemAvatar from "@mui/material/ListItemAvatar";
 import { secToString, isCorrect } from "../../clientFunctions.js";
 const colors = ["success", "success", "success", "warning", "error", "error"];
 const Tournament = ({ tournament, communityName, isMobile, admin }) => {
-  const [showVirtual, setShowVirtual] = useState(true);
+  const [showVirtual, setShowVirtual] = useState(false);
   const [deleted, setDeleted] = useState(false);
   const listItems = tournament.correctGuesses
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      if (a.guessNumber && b.guessNumber) {
+        return a.guessNumber - b.guessNumber;
+      }
+      return (
         (a.virtual ? a.virtualSeconds : a.seconds) - (b.virtual ? b.virtualSeconds : b.seconds)
-    )
-    .filter((a) => showVirtual || !a.virtual)
+      );
+    })
+    .filter((a) => showVirtual || a.seconds <= 86400)
     .map((guess, i) => {
       return (
-        <ListItem key={i} style={{ opacity: guess.virtual ? 0.7 : 1 }}>
+        <ListItem key={i} style={{ opacity: guess.seconds > 86400 ? 0.7 : 1 }}>
           <ListItemAvatar>
             <Badge
               badgeContent={guess.guessNumber && guess.guessNumber + "/6"}
@@ -51,15 +55,11 @@ const Tournament = ({ tournament, communityName, isMobile, admin }) => {
   if (deleted) return <></>;
   return (
     <Card
-      variant={
-        tournament.status === "complete" || tournament.status === "inProgress"
-          ? "outlined"
-          : undefined
-      }
-      raised={tournament.status !== "complete" && tournament.status !== "inProgress"}
+      variant={tournament.status === "complete" ? "outlined" : undefined}
+      raised={tournament.status !== "complete"}
       sx={{
         margin: isMobile ? "15px 12px 15px 12px" : "15px 24px 15px 0px",
-        backgroundColor: tournament.status === "waiting" && "#B8FFCC",
+        backgroundColor: tournament.status === "inProgress" && "#B8FFCC",
         //opacity: tournament.status !== "waiting" && "70%",
       }}
     >
@@ -78,7 +78,7 @@ const Tournament = ({ tournament, communityName, isMobile, admin }) => {
         <Grid container direction="row" width="100%">
           <Box width="50%">
             <Typography sx={{ fontSize: 14 }} color="text.secondary" gutterBottom>
-              {new Date(tournament.startTime).toString().substring(0, 21)}
+              {new Date(tournament.startTime).toString().substring(0, 10)}
             </Typography>
             <Typography variant="h6">{tournament.name}</Typography>
             <Button
@@ -87,7 +87,7 @@ const Tournament = ({ tournament, communityName, isMobile, admin }) => {
                 history.push(`/${communityName}/${encodeURI(tournament.name)}`);
               }}
             >
-              Enter
+              {tournament.status === "Complete" ? "Compete (Unofficial)" : "Compete"}
             </Button>
           </Box>
           <Box width="50%">

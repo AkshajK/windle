@@ -49,11 +49,19 @@ const setup = async () => {
       setTimeout(() => {
         startTournament(tournament._id);
       }, timeUntilStart);
+
       console.log(
         `Scheduled tournament ${tournament.name} to start in ${timeUntilStart * 0.001} seconds`
       );
     }
   });
+  if (tournament.status === "inProgress") {
+    const startTime = tournament.startTime;
+    const timeUntilEnd = new Date(startTime).getTime() + 86400 * 1000 - new Date().getTime();
+    setTimeout(() => {
+      endTournament(tournament._id);
+    }, timeUntilEnd);
+  }
 };
 
 const isAllowed = (word) => {
@@ -114,6 +122,9 @@ const createTournament = async (
 };
 
 const startTournament = async (tournamentId) => {
+  setTimeout(() => {
+    endTournament(tournament._id);
+  }, 86400 * 1000);
   const participantsMongoDB = await User.find({ tournamentLobbysIn: tournamentId });
   await lock.acquire(tournamentId, async () => {
     const tournament = await Tournament.findById(tournamentId);
@@ -127,9 +138,18 @@ const startTournament = async (tournamentId) => {
     .emit("start tournament", { tournamentId: tournamentId + "" });
 };
 
+const endTournament = async (tournamentId) => {
+  await lock.acquire(tournamentId, async () => {
+    const tournament = await Tournament.findById(tournamentId);
+    tournament.status = "complete";
+    await tournament.save();
+  });
+};
+
 module.exports = {
   createTournament,
   startTournament,
+  endTournament,
   leaveLobby,
   getRandomInt,
   isAllowed,

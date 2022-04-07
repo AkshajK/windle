@@ -22,7 +22,7 @@ const Community = ({ userName, picture, admin }) => {
     });
   }, []);
   const tournamentsShowing = tournaments.filter(
-    (t) => t.status === "waiting" || t.status === "inProgress" || t.status === "complete"
+    (t) => (t.status === "waiting" && false) || t.status === "inProgress" || t.status === "complete"
   );
 
   return (

@@ -23,6 +23,7 @@ const Wordle = ({ tournamentId, guesses, finished, setGuesses }) => {
   );
   const isMobile = useCheckMobileScreen();
   const [currentRow, setCurrentRow] = useState(0);
+  const [disabled, setDisabled] = useState(false);
   useEffect(() => {
     setLetters((oldLetters) => {
       const sortedGuesses = guesses.sort((a, b) => a.seconds - b.seconds);
@@ -43,18 +44,22 @@ const Wordle = ({ tournamentId, guesses, finished, setGuesses }) => {
     if (key === "Back") {
       removeLetter();
     } else if (key === "Enter") {
-      const rowOfGuess = currentRow;
-      post("/api/guess", { tournamentId, guess: letters[currentRow].join("") }).then((data) => {
-        if (!data.valid) {
-          setLetters((oldLetters) => {
-            oldLetters[rowOfGuess] = fiveEmpty.slice();
-            return oldLetters.map((row) => row.slice());
-          });
-        }
-        if (data.answer) {
-          setGuesses(data.guesses);
-        }
-      });
+      if (!disabled) {
+        setDisabled(true);
+        const rowOfGuess = currentRow;
+        post("/api/guess", { tournamentId, guess: letters[currentRow].join("") }).then((data) => {
+          if (!data.valid) {
+            setLetters((oldLetters) => {
+              oldLetters[rowOfGuess] = fiveEmpty.slice();
+              return oldLetters.map((row) => row.slice());
+            });
+          }
+          if (data.answer) {
+            setGuesses(data.guesses);
+          }
+          setDisabled(false);
+        });
+      }
     } else {
       addLetter(key);
     }
