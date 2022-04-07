@@ -24,7 +24,7 @@ const Tournament = ({ tournament, communityName, isMobile, admin }) => {
   const [deleted, setDeleted] = useState(false);
   const listItems = tournament.correctGuesses
     .sort((a, b) => {
-      if (a.guessNumber && b.guessNumber) {
+      if (a.guessNumber && b.guessNumber && a.guessNumber !== b.guessNumber) {
         return a.guessNumber - b.guessNumber;
       }
       return (
